@@ -1,0 +1,23 @@
+{
+  "framework": "Tauri",
+  "version": "2.x",
+  "lastUpdated": "2025-01-01",
+  "notes": "Numbers from Tauri documentation and benchmarks. Uses system webview so binary is smaller.",
+  "sources": [
+    "https://tauri.app/concept/size/",
+    "https://tauri.app/concept/performance/",
+    "https://github.com/nicedoc/nicedoc/issues/1"
+  ],
+  "startup": {
+    "coldStartMs": "100-300",
+    "description": "Leverages system webview so no browser engine startup cost. Rust binary loads quickly."
+  },
+  "memory": {
+    "idleRssMb": "30-60",
+    "description": "Much lower than Electron due to system webview. Process model is simpler."
+  },
+  "bundleSize": {
+    "minimalAppMb": "2-10",
+    "description": "Tiny binaries since system webview is not bundled. Rust produces compact executables."
+  }
+}

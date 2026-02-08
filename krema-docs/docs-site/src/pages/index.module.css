@@ -1,0 +1,588 @@
+/**
+ * Krema landing page styles
+ * Dark charcoal base + amber/gold accents
+ */
+
+/* ===== Hero Section ===== */
+.heroBanner {
+  padding: 6rem 0 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(240, 160, 48, 0.18), transparent 70%),
+    linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%);
+}
+
+.heroBanner::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 30% 50%, rgba(240, 160, 48, 0.08), transparent 50%);
+  animation: ambientGlow 8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes ambientGlow {
+  from { transform: translate(-5%, -5%) scale(1); }
+  to   { transform: translate(5%, 5%) scale(1.1); }
+}
+
+.heroTitle {
+  font-family: 'Quantify', sans-serif;
+  background: linear-gradient(135deg, #ffffff 0%, #f0a030 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 3.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.heroSubtitle {
+  color: rgba(240, 246, 252, 0.8);
+  font-size: 1.3rem;
+  font-style: italic;
+  margin-bottom: 1.5rem;
+}
+
+.heroDescription {
+  font-size: 1.15rem;
+  color: rgba(240, 246, 252, 0.55);
+  margin-bottom: 1.5rem;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #fff;
+  background: linear-gradient(135deg, #e89020, #f0a030);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
+}
+
+.btnPrimary:hover {
+  box-shadow: 0 0 24px rgba(240, 160, 48, 0.45);
+  transform: translateY(-1px);
+  color: #fff;
+  text-decoration: none;
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: rgba(240, 246, 252, 0.9);
+  background: transparent;
+  border: 1.5px solid rgba(240, 246, 252, 0.25);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.2s ease;
+}
+
+.btnSecondary:hover {
+  background: rgba(240, 246, 252, 0.08);
+  border-color: rgba(240, 246, 252, 0.5);
+  color: #f0f6fc;
+  text-decoration: none;
+}
+
+/* Hero terminal snippet */
+.heroTerminal {
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  text-align: left;
+}
+
+.terminalTitleBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.heroTerminalTabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.heroTab {
+  padding: 6px 16px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(240, 246, 252, 0.4);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.heroTab:hover {
+  color: rgba(240, 246, 252, 0.7);
+}
+
+.heroTabActive {
+  color: #f0a030;
+  border-bottom-color: #f0a030;
+}
+
+.terminalDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.terminalDotRed    { background: #ff5f57; }
+.terminalDotYellow { background: #febc2e; }
+.terminalDotGreen  { background: #28c840; }
+
+.terminalBody {
+  padding: 14px 18px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace;
+  font-size: 0.9rem;
+  color: rgba(240, 246, 252, 0.8);
+  line-height: 1.6;
+}
+
+.terminalBody .terminalPrompt {
+  color: #28c840;
+}
+
+.terminalBody .terminalCommand {
+  color: #f0a030;
+}
+
+/* Navy hero */
+:global(html[data-krema-theme='navy']) .heroBanner {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(91, 175, 255, 0.12), transparent 70%),
+    linear-gradient(135deg, #111a3d 0%, #16214d 50%, #1d2b5e 100%);
+}
+
+/* ===== Section Common ===== */
+.sectionHeading {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  font-size: 1.6rem;
+}
+
+.sectionSubheading {
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--ifm-color-emphasis-600);
+  margin-top: -1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+/* ===== Features Section ===== */
+.features {
+  padding: 5rem 0;
+  background-color: var(--ifm-background-surface-color);
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.featureCard {
+  border-radius: 12px;
+  padding: 1.75rem;
+  background: var(--ifm-background-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  border-color: var(--ifm-color-primary-lighter);
+}
+
+[data-theme='dark'] .featureCard {
+  background: rgba(22, 27, 34, 0.6);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='dark'] .featureCard:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  border-color: rgba(240, 160, 48, 0.3);
+}
+
+:global(html[data-krema-theme='navy']) .featureCard {
+  background: rgba(29, 43, 94, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(html[data-krema-theme='navy']) .featureCard:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  border-color: rgba(91, 175, 255, 0.3);
+}
+
+.featureIconBox {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(240, 160, 48, 0.1), rgba(240, 160, 48, 0.18));
+  color: var(--ifm-color-primary);
+}
+
+[data-theme='dark'] .featureIconBox {
+  background: linear-gradient(135deg, rgba(240, 160, 48, 0.15), rgba(240, 160, 48, 0.08));
+}
+
+.featureCard h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.featureCard p {
+  margin: 0;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+/* ===== Benefits Section ===== */
+.benefits {
+  padding: 5rem 0;
+  background-color: var(--ifm-background-color);
+}
+
+.benefitsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.benefitCard {
+  border-radius: 12px;
+  padding: 2rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.benefitCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .benefitCard {
+  background: rgba(22, 27, 34, 0.5);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='dark'] .benefitCard:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+:global(html[data-krema-theme='navy']) .benefitCard {
+  background: rgba(29, 43, 94, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(html[data-krema-theme='navy']) .benefitCard:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.benefitTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ifm-color-primary);
+  margin-bottom: 0.5rem;
+}
+
+.benefitDesc {
+  font-size: 0.92rem;
+  color: var(--ifm-color-emphasis-600);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ===== Works With Section ===== */
+.worksWith {
+  padding: 5rem 0;
+  background-color: var(--ifm-background-surface-color);
+}
+
+.worksWithRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.worksWithRow:last-child {
+  margin-bottom: 0;
+}
+
+.worksWithLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ifm-color-emphasis-500);
+  min-width: 80px;
+}
+
+.worksWithLogos {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.logoItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0.45;
+  filter: grayscale(100%);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.logoItem:hover {
+  opacity: 1;
+  filter: none;
+}
+
+.logoItem svg {
+  width: 36px;
+  height: 36px;
+}
+
+.logoItem span {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--ifm-color-emphasis-600);
+}
+
+/* ===== Terminal Window Component ===== */
+.terminalWindow {
+  border-radius: 10px;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1rem;
+}
+
+[data-theme='dark'] .terminalWindow {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.terminalWindowTitleBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+[data-theme='dark'] .terminalWindowTitleBar {
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+:global(html[data-krema-theme='navy']) .terminalWindow {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+:global(html[data-krema-theme='navy']) .terminalWindowTitleBar {
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.terminalWindowTitle {
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+/* Reset code block border-radius inside terminal */
+.terminalWindow [class*='codeBlockContainer'] {
+  border: none;
+  border-radius: 0;
+}
+
+.terminalWindow .prism-code {
+  border-radius: 0;
+}
+
+/* ===== Quick Start Section ===== */
+.quickstart {
+  padding: 5rem 0;
+  background-color: var(--ifm-background-color);
+}
+
+.quickstart h2 {
+  margin-bottom: 1.5rem;
+}
+
+.quickstart p {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.quickstartContent {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-start;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.quickstartText {
+  flex: 1;
+  min-width: 0;
+}
+
+.quickstartCode {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Tabs inside terminal window */
+.quickstartCode [class*='tabs'] {
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  margin: 0;
+  padding: 0 0.5rem;
+}
+
+[data-theme='dark'] .quickstartCode [class*='tabs'] {
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+:global(html[data-krema-theme='navy']) .quickstartCode [class*='tabs'] {
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ===== Code Section ===== */
+.codeSection {
+  padding: 5rem 0;
+  background-color: var(--ifm-background-surface-color);
+}
+
+.codeSectionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* ===== Responsive ===== */
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 3rem 1rem 2rem;
+  }
+
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+
+  .buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .heroTerminal {
+    max-width: 100%;
+  }
+
+  .featureGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .features,
+  .benefits,
+  .worksWith,
+  .quickstart,
+  .codeSection {
+    padding: 3rem 1rem;
+  }
+
+  .quickstartContent {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .codeSectionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .worksWithRow {
+    gap: 1.5rem;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .benefitsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .worksWithLogos {
+    gap: 1.25rem;
+  }
+}

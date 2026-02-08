@@ -1,0 +1,985 @@
+<div class="app">
+  <header>
+    <h1>{{ title }}</h1>
+    <p class="subtitle">Desktop app powered by Angular + Java via Krema</p>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs">
+    <button
+      *ngFor="let tab of tabs"
+      [class.active]="activeTab === tab.id"
+      (click)="activeTab = tab.id">
+      {{ tab.label }}
+    </button>
+  </nav>
+
+  <main>
+    <!-- Basic IPC -->
+    <section *ngIf="activeTab === 'ipc'" class="tab-content">
+      <div class="card">
+        <h2>Greeting Command</h2>
+        <p class="description">Call Java method with string parameter, receive string response</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="name" placeholder="Enter your name" (keyup.enter)="greet()" />
+          <button (click)="greet()">Greet</button>
+        </div>
+        <div class="result" *ngIf="greeting">{{ greeting }}</div>
+      </div>
+
+      <div class="card">
+        <h2>Calculator</h2>
+        <p class="description">Pass multiple typed parameters (double, String) to Java</p>
+        <div class="input-group">
+          <input type="number" [(ngModel)]="num1" class="small" />
+          <select [(ngModel)]="operation">
+            <option value="add">+</option>
+            <option value="subtract">-</option>
+            <option value="multiply">×</option>
+            <option value="divide">÷</option>
+          </select>
+          <input type="number" [(ngModel)]="num2" class="small" />
+          <button (click)="calculate()">Calculate</button>
+        </div>
+        <div class="result" *ngIf="calcResult">{{ calcResult }}</div>
+      </div>
+    </section>
+
+    <!-- Events -->
+    <section *ngIf="activeTab === 'events'" class="tab-content">
+      <div class="card">
+        <h2>Backend Events (Java → JavaScript)</h2>
+        <p class="description">Java can push events to the frontend at any time</p>
+        <div class="button-group">
+          <button (click)="startTimer()" [disabled]="timerRunning">Start Timer</button>
+          <button (click)="stopTimer()" [disabled]="!timerRunning">Stop Timer</button>
+        </div>
+        <div class="timer-display" *ngIf="timerCount > 0">
+          <span class="count">{{ timerCount }}</span>
+          <span class="label">seconds</span>
+        </div>
+        <pre class="code-block" *ngIf="lastEvent">Last event: {{ lastEvent | json }}</pre>
+      </div>
+
+      <div class="card">
+        <h2>App Lifecycle Events</h2>
+        <p class="description">Receive app:ready, app:before-quit events from the backend</p>
+        <div class="info-grid" *ngIf="lifecycleEvents.length > 0">
+          <div class="info-item" *ngFor="let evt of lifecycleEvents">
+            <span class="label">{{ evt.event }}</span>
+            <span class="value">{{ evt.timestamp | date:'HH:mm:ss.SSS' }}</span>
+          </div>
+        </div>
+        <div class="result" *ngIf="appReady">App Ready!</div>
+        <p *ngIf="lifecycleEvents.length === 0" style="color: #888; font-size: 0.85rem;">
+          Lifecycle events will appear here when emitted by the backend
+        </p>
+      </div>
+    </section>
+
+    <!-- Native APIs -->
+    <section *ngIf="activeTab === 'native'" class="tab-content">
+      <div class="card">
+        <h2>Path Utilities</h2>
+        <p class="description">Built-in path manipulation APIs (path:dirname, path:basename, etc.)</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="pathInput" placeholder="Enter a file path" />
+          <button (click)="analyzePath()">Analyze Path</button>
+        </div>
+        <div class="button-group">
+          <button (click)="joinPaths()">Join Paths</button>
+          <button (click)="resolvePath()">Resolve Path</button>
+        </div>
+        <div class="info-grid" *ngIf="pathResults.length > 0">
+          <div class="info-item" *ngFor="let item of pathResults">
+            <span class="label">{{ item.label }}</span>
+            <span class="value">{{ item.value }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>App Directories</h2>
+        <p class="description">Platform-specific app data, config, cache, and log directories</p>
+        <div class="button-group">
+          <button (click)="getAppDirectories()">Get App Directories</button>
+        </div>
+        <div class="info-grid" *ngIf="appDirs.length > 0">
+          <div class="info-item" *ngFor="let dir of appDirs">
+            <span class="label">{{ dir.label }}</span>
+            <span class="value clickable" (click)="listDirectory(dir.value)">{{ dir.value }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Shell Integration</h2>
+        <p class="description">shell:showItemInFolder and shell:openWith</p>
+        <div class="button-group">
+          <button (click)="showInFinder()">Reveal in Finder</button>
+          <button (click)="openWithApp()">Open URL with Safari</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>HTTP Client (Backend)</h2>
+        <p class="description">Make HTTP requests from Java backend - bypasses CORS restrictions</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="httpUrl" placeholder="URL" style="flex: 1;">
+          <select [(ngModel)]="httpMethod" style="width: 100px;">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+            <option value="PATCH">PATCH</option>
+          </select>
+        </div>
+        <div class="input-group" *ngIf="httpMethod !== 'GET' && httpMethod !== 'HEAD'">
+          <input type="text" [(ngModel)]="httpBody" placeholder="Request body (JSON)" style="flex: 1;">
+        </div>
+        <div class="button-group">
+          <button (click)="httpRequest()" [disabled]="httpLoading">Send Request</button>
+          <button (click)="httpFetch()" [disabled]="httpLoading">Simple Fetch</button>
+          <button (click)="httpFetchJson()" [disabled]="httpLoading">Fetch JSON</button>
+        </div>
+        <div class="status-line" *ngIf="httpLoading">
+          <span class="status-indicator pending"></span>
+          Loading...
+        </div>
+        <pre class="code-block" *ngIf="httpResult">{{ httpResult | json }}</pre>
+      </div>
+
+      <div class="card">
+        <h2>Native Dialogs</h2>
+        <p class="description">Built-in file dialogs, confirmation, and prompts</p>
+        <div class="button-group">
+          <button (click)="openFileDialog()">Open File</button>
+          <button (click)="saveFileDialog()">Save File</button>
+          <button (click)="selectFolderDialog()">Select Folder</button>
+        </div>
+        <div class="button-group">
+          <button (click)="confirmDialog()">Confirm Dialog</button>
+          <button (click)="promptDialog()">Prompt Dialog</button>
+          <button (click)="showBuiltinNotification()">Notification</button>
+        </div>
+        <div class="result" *ngIf="dialogResult">{{ dialogResult }}</div>
+      </div>
+    </section>
+
+    <!-- Screen Info -->
+    <section *ngIf="activeTab === 'screen'" class="tab-content">
+      <div class="card">
+        <h2>Display Information</h2>
+        <p class="description">Get information about connected displays via NSScreen</p>
+        <div class="button-group">
+          <button (click)="getAllScreens()">Get All Screens</button>
+          <button (click)="getPrimaryScreen()">Get Primary Screen</button>
+        </div>
+        <div class="screen-list" *ngIf="screens.length > 0">
+          <div class="screen-card" *ngFor="let screen of screens; let i = index">
+            <div class="screen-header">
+              <span class="screen-name">{{ screen.name || 'Display ' + (i + 1) }}</span>
+              <span class="screen-badge" *ngIf="screen.isPrimary">Primary</span>
+            </div>
+            <div class="screen-details">
+              <div class="detail-row">
+                <span class="label">Resolution</span>
+                <span class="value">{{ screen.frame.width }} × {{ screen.frame.height }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Position</span>
+                <span class="value">({{ screen.frame.x }}, {{ screen.frame.y }})</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Visible Area</span>
+                <span class="value">{{ screen.visibleFrame.width }} × {{ screen.visibleFrame.height }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Scale Factor</span>
+                <span class="value">{{ screen.scaleFactor }}x</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Refresh Rate</span>
+                <span class="value">{{ screen.refreshRate }} Hz</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <pre class="code-block" *ngIf="primaryScreen && screens.length === 0">{{ primaryScreen | json }}</pre>
+      </div>
+
+      <div class="card">
+        <h2>Cursor Position</h2>
+        <p class="description">Track cursor position in screen coordinates</p>
+        <div class="button-group">
+          <button (click)="getCursorPosition()">Get Cursor Position</button>
+          <button (click)="getScreenAtCursor()">Get Screen at Cursor</button>
+          <button (click)="toggleCursorTracking()" [class.active]="trackingCursor">
+            {{ trackingCursor ? 'Stop Tracking' : 'Start Tracking' }}
+          </button>
+        </div>
+        <div class="cursor-display" *ngIf="cursorPosition">
+          <div class="coord">
+            <span class="label">X</span>
+            <span class="value">{{ cursorPosition.x | number:'1.0-0' }}</span>
+          </div>
+          <div class="coord">
+            <span class="label">Y</span>
+            <span class="value">{{ cursorPosition.y | number:'1.0-0' }}</span>
+          </div>
+        </div>
+        <div class="result" *ngIf="screenAtCursor">
+          Cursor is on: <strong>{{ screenAtCursor.name || 'Display' }}</strong>
+          ({{ screenAtCursor.frame.width }} × {{ screenAtCursor.frame.height }})
+        </div>
+      </div>
+    </section>
+
+    <!-- Drag and Drop -->
+    <section *ngIf="activeTab === 'dragdrop'" class="tab-content">
+      <div class="card">
+        <h2>Drag & Drop Configuration</h2>
+        <p class="description">Configure drag-drop behavior via HTML5 Drag API</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="acceptedExtensions" placeholder="Filter extensions (e.g., txt,pdf,png)" />
+        </div>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="dropZoneSelector" placeholder="Drop zone CSS selector (optional)" />
+        </div>
+        <div class="button-group">
+          <button (click)="configureDragDrop()">Apply Configuration</button>
+          <button (click)="enableDragDrop()" [disabled]="dropEnabled">Enable</button>
+          <button (click)="disableDragDrop()" [disabled]="!dropEnabled">Disable</button>
+        </div>
+        <div class="status-line">
+          <span class="status-indicator" [class.ready]="dropEnabled" [class.pending]="!dropEnabled"></span>
+          Drag & Drop is {{ dropEnabled ? 'enabled' : 'disabled' }}
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Drop Zone</h2>
+        <p class="description">Drag files here to test the file-drop event</p>
+        <div class="drop-zone" [class.hovering]="dropHovering" [class.has-files]="droppedFiles.length > 0">
+          <div class="drop-zone-content" *ngIf="droppedFiles.length === 0 && !dropHovering">
+            <span class="drop-icon">📂</span>
+            <p>Drag files here</p>
+          </div>
+          <div class="drop-zone-content" *ngIf="dropHovering">
+            <span class="drop-icon">⬇️</span>
+            <p>Release to drop</p>
+          </div>
+          <div class="dropped-files" *ngIf="droppedFiles.length > 0">
+            <div class="dropped-file" *ngFor="let file of droppedFiles">
+              <span class="file-icon">📄</span>
+              <div class="file-info">
+                <span class="file-name">{{ file.name }}</span>
+                <span class="file-meta">{{ file.type || 'unknown' }} • {{ formatSize(file.size) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="button-group" *ngIf="droppedFiles.length > 0">
+          <button (click)="clearDroppedFiles()">Clear Files</button>
+        </div>
+        <pre class="code-block" *ngIf="lastDropEvent">Last event: {{ lastDropEvent | json }}</pre>
+      </div>
+    </section>
+
+    <!-- Native Menus -->
+    <section *ngIf="activeTab === 'menus'" class="tab-content">
+      <div class="card">
+        <h2>Application Menu</h2>
+        <p class="description">Set the native application menu bar (NSMenu)</p>
+        <div class="button-group">
+          <button (click)="setApplicationMenu()">Set Application Menu</button>
+        </div>
+        <div class="result" *ngIf="menuConfigured">
+          <span class="status-indicator ready"></span>
+          Application menu configured! Check the menu bar.
+        </div>
+        <p class="hint" *ngIf="!menuConfigured">
+          Click the button to configure a custom application menu with App, Edit, View, Window, and Help menus.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Context Menu</h2>
+        <p class="description">Show a native right-click context menu</p>
+        <div class="button-group">
+          <button (click)="showContextMenu()">Show Context Menu</button>
+        </div>
+        <div class="result" *ngIf="contextMenuResult">{{ contextMenuResult }}</div>
+      </div>
+
+      <div class="card">
+        <h2>Menu Click Events</h2>
+        <p class="description">Receive menu:click events when menu items are selected</p>
+        <div class="button-group">
+          <button (click)="clearMenuEvents()" [disabled]="menuClickEvents.length === 0">Clear Events</button>
+        </div>
+        <div class="event-log" *ngIf="menuClickEvents.length > 0">
+          <div class="event-item" *ngFor="let evt of menuClickEvents">
+            <span class="event-id">{{ evt.id }}</span>
+            <span class="event-time">{{ evt.timestamp | date:'HH:mm:ss.SSS' }}</span>
+          </div>
+        </div>
+        <p class="hint" *ngIf="menuClickEvents.length === 0">
+          Menu click events will appear here when you select menu items.
+        </p>
+      </div>
+    </section>
+
+    <!-- Window Management -->
+    <section *ngIf="activeTab === 'window'" class="tab-content">
+      <div class="card">
+        <h2>Window State</h2>
+        <p class="description">Query the current window state</p>
+        <div class="button-group">
+          <button (click)="getWindowState()">Get State</button>
+          <button (click)="getWindowTitle()">Get Title</button>
+        </div>
+        <div class="info-grid" *ngIf="windowState">
+          <div class="info-item">
+            <span class="label">Position</span>
+            <span class="value">{{ windowState.x }}, {{ windowState.y }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Size</span>
+            <span class="value">{{ windowState.width }} x {{ windowState.height }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Minimized</span>
+            <span class="value">{{ windowState.minimized }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Maximized</span>
+            <span class="value">{{ windowState.maximized }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Fullscreen</span>
+            <span class="value">{{ windowState.fullscreen }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Focused</span>
+            <span class="value">{{ windowState.focused }}</span>
+          </div>
+        </div>
+        <div class="result" *ngIf="windowTitle">Title: {{ windowTitle }}</div>
+      </div>
+
+      <div class="card">
+        <h2>Window Actions</h2>
+        <p class="description">Control window state</p>
+        <div class="button-group">
+          <button (click)="minimizeWindow()">Minimize</button>
+          <button (click)="maximizeWindow()">Maximize</button>
+          <button (click)="restoreWindow()">Restore</button>
+          <button (click)="toggleFullscreen()">Toggle Fullscreen</button>
+          <button (click)="centerWindow()">Center</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Positioner Plugin</h2>
+        <p class="description">Snap window to semantic screen positions via positioner:moveTo</p>
+        <div class="position-grid">
+          <button (click)="moveTo('TOP_LEFT')">Top Left</button>
+          <button (click)="moveTo('TOP_CENTER')">Top Center</button>
+          <button (click)="moveTo('TOP_RIGHT')">Top Right</button>
+          <button (click)="moveTo('LEFT_CENTER')">Left Center</button>
+          <button (click)="moveTo('CENTER')">Center</button>
+          <button (click)="moveTo('RIGHT_CENTER')">Right Center</button>
+          <button (click)="moveTo('BOTTOM_LEFT')">Bottom Left</button>
+          <button (click)="moveTo('BOTTOM_CENTER')">Bottom Center</button>
+          <button (click)="moveTo('BOTTOM_RIGHT')">Bottom Right</button>
+        </div>
+        <div class="result" *ngIf="positionerResult">{{ positionerResult }}</div>
+      </div>
+
+      <div class="card">
+        <h2>Size & Position</h2>
+        <p class="description">Resize and move the window</p>
+        <div class="form-group">
+          <label>Size:</label>
+          <input type="number" [(ngModel)]="newWidth" placeholder="Width" style="width: 80px;">
+          <span> x </span>
+          <input type="number" [(ngModel)]="newHeight" placeholder="Height" style="width: 80px;">
+          <button (click)="setWindowSize()">Set Size</button>
+        </div>
+        <div class="form-group">
+          <label>Position:</label>
+          <input type="number" [(ngModel)]="newX" placeholder="X" style="width: 80px;">
+          <span> , </span>
+          <input type="number" [(ngModel)]="newY" placeholder="Y" style="width: 80px;">
+          <button (click)="setWindowPosition()">Set Position</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Window Properties</h2>
+        <p class="description">Modify window properties</p>
+        <div class="form-group">
+          <label>Title:</label>
+          <input type="text" [(ngModel)]="windowTitle" placeholder="Window title" style="width: 200px;">
+          <button (click)="setWindowTitle()">Set Title</button>
+        </div>
+        <div class="form-group">
+          <label>Opacity:</label>
+          <input type="range" [(ngModel)]="windowOpacity" min="0.1" max="1" step="0.1" style="width: 150px;">
+          <span>{{ windowOpacity }}</span>
+          <button (click)="setWindowOpacity()">Set Opacity</button>
+        </div>
+        <div class="button-group">
+          <button (click)="setAlwaysOnTop(true)">Always On Top: ON</button>
+          <button (click)="setAlwaysOnTop(false)">Always On Top: OFF</button>
+        </div>
+        <div class="button-group" style="margin-top: 8px;">
+          <button (click)="setResizable(true)">Resizable: ON</button>
+          <button (click)="setResizable(false)">Resizable: OFF</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Frameless Window (macOS)</h2>
+        <p class="description">Custom title bar styling - hiddenInset for modern macOS look</p>
+        <div class="form-group">
+          <label>Title Bar Style:</label>
+          <select [(ngModel)]="titleBarStyle" style="width: 150px;">
+            <option value="default">Default</option>
+            <option value="hidden">Hidden</option>
+            <option value="hiddenInset">Hidden Inset</option>
+          </select>
+          <button (click)="setTitleBarStyle()">Apply</button>
+        </div>
+        <div class="form-group">
+          <label>Traffic Lights Position:</label>
+          <input type="number" [(ngModel)]="trafficLightX" placeholder="X" style="width: 60px;">
+          <span>,</span>
+          <input type="number" [(ngModel)]="trafficLightY" placeholder="Y" style="width: 60px;">
+          <button (click)="setTrafficLightPosition()">Set Position</button>
+        </div>
+        <div class="button-group">
+          <button (click)="setTitlebarTransparent(true)">Titlebar Transparent</button>
+          <button (click)="setTitlebarTransparent(false)">Titlebar Opaque</button>
+        </div>
+        <div class="button-group" style="margin-top: 8px;">
+          <button (click)="setFullSizeContentView(true)">Full Size Content: ON</button>
+          <button (click)="setFullSizeContentView(false)">Full Size Content: OFF</button>
+        </div>
+        <p class="hint">
+          Use "Hidden Inset" for Electron-style frameless window with inset traffic lights.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Multi-Window</h2>
+        <p class="description">Create and manage multiple windows</p>
+        <div class="form-group">
+          <label>Title:</label>
+          <input type="text" [(ngModel)]="childWindowTitle" placeholder="Window title" style="width: 150px;">
+        </div>
+        <div class="form-group">
+          <label>URL (optional):</label>
+          <input type="text" [(ngModel)]="childWindowUrl" placeholder="https://..." style="width: 200px;">
+        </div>
+        <div class="button-group">
+          <button (click)="createChildWindow()">Create Window</button>
+          <button (click)="showModal()">Show Modal</button>
+          <button (click)="listWindows()">List Windows</button>
+        </div>
+        <div class="info-grid" *ngIf="windowList.length > 0">
+          <div class="info-item">
+            <span class="label">Open Windows</span>
+            <span class="value">{{ windowList.join(', ') }}</span>
+          </div>
+        </div>
+        <div class="result" *ngIf="childWindowLabel">
+          Last created: <strong>{{ childWindowLabel }}</strong>
+          <button (click)="closeChildWindow()" style="margin-left: 8px;">Close</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Inter-Window Messaging</h2>
+        <p class="description">Send messages between windows</p>
+        <div class="form-group">
+          <label>Event:</label>
+          <input type="text" [(ngModel)]="windowMessageEvent" placeholder="custom-message" style="width: 150px;">
+        </div>
+        <div class="form-group">
+          <label>Payload:</label>
+          <input type="text" [(ngModel)]="windowMessagePayload" placeholder='{"key": "value"}' style="width: 250px;">
+        </div>
+        <div class="button-group">
+          <button (click)="sendToWindow()" [disabled]="!childWindowLabel">Send to Window</button>
+          <button (click)="broadcastToWindows()">Broadcast to All</button>
+        </div>
+        <p class="hint" *ngIf="!childWindowLabel">
+          Create a child window first to send messages to it.
+        </p>
+      </div>
+    </section>
+
+    <!-- Essential Plugins -->
+    <section *ngIf="activeTab === 'plugins'" class="tab-content">
+      <div class="card">
+        <h2>OS Information</h2>
+        <p class="description">Built-in os:info, os:memory, os:locale APIs</p>
+        <div class="button-group">
+          <button (click)="getOsInfo()">Get OS Info</button>
+          <button (click)="getOsMemory()">Get Memory</button>
+          <button (click)="getOsLocale()">Get Locale</button>
+        </div>
+        <div class="info-grid" *ngIf="osInfo">
+          <div class="info-item">
+            <span class="label">Platform</span>
+            <span class="value">{{ osInfo['platform'] }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Architecture</span>
+            <span class="value">{{ osInfo['arch'] }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Version</span>
+            <span class="value">{{ osInfo['version'] }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Hostname</span>
+            <span class="value">{{ osInfo['hostname'] }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Username</span>
+            <span class="value">{{ osInfo['username'] }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">CPU Count</span>
+            <span class="value">{{ osInfo['cpuCount'] }}</span>
+          </div>
+        </div>
+        <div class="info-grid" *ngIf="osMemory">
+          <div class="info-item">
+            <span class="label">Total Memory</span>
+            <span class="value">{{ formatBytes(osMemory['total']) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Used Memory</span>
+            <span class="value">{{ formatBytes(osMemory['used']) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Free Memory</span>
+            <span class="value">{{ formatBytes(osMemory['free']) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Max Memory</span>
+            <span class="value">{{ formatBytes(osMemory['max']) }}</span>
+          </div>
+        </div>
+        <div class="info-grid" *ngIf="osLocale">
+          <div class="info-item">
+            <span class="label">Language</span>
+            <span class="value">{{ osLocale['language'] }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Country</span>
+            <span class="value">{{ osLocale['country'] }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Display Name</span>
+            <span class="value">{{ osLocale['displayName'] }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Tag</span>
+            <span class="value">{{ osLocale['tag'] }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Persistent Store</h2>
+        <p class="description">JSON-based key-value storage (store:get, store:set, etc.)</p>
+        <div class="form-group">
+          <label>Key:</label>
+          <input type="text" [(ngModel)]="storeKey" placeholder="Key" style="width: 120px;">
+          <label>Value:</label>
+          <input type="text" [(ngModel)]="storeValue" placeholder="Value" style="width: 150px;">
+        </div>
+        <div class="button-group">
+          <button (click)="storeSet()">Set</button>
+          <button (click)="storeGet()">Get</button>
+          <button (click)="storeDelete()">Delete</button>
+        </div>
+        <div class="button-group" style="margin-top: 8px;">
+          <button (click)="storeGetKeys()">Get Keys</button>
+          <button (click)="storeGetEntries()">Get All Entries</button>
+          <button (click)="storeClear()">Clear Store</button>
+        </div>
+        <div class="result" *ngIf="storeResult !== null">
+          Result: {{ storeResult | json }}
+        </div>
+        <div class="info-grid" *ngIf="storeKeys.length > 0">
+          <div class="info-item">
+            <span class="label">Keys</span>
+            <span class="value">{{ storeKeys.join(', ') || '(empty)' }}</span>
+          </div>
+        </div>
+        <pre class="code-block" *ngIf="storeEntries && (storeEntries | keyvalue).length > 0">{{ storeEntries | json }}</pre>
+      </div>
+
+      <div class="card">
+        <h2>Single Instance</h2>
+        <p class="description">Ensure only one instance of the app is running</p>
+        <div class="button-group">
+          <button (click)="checkIsPrimary()">Check Primary</button>
+          <button (click)="requestInstanceLock()">Request Lock</button>
+        </div>
+        <div class="status-line">
+          <span class="status-indicator" [class.ready]="isPrimaryInstance" [class.pending]="!isPrimaryInstance"></span>
+          {{ isPrimaryInstance ? 'This is the primary instance' : 'Instance status unknown' }}
+        </div>
+        <p class="hint">
+          When a second instance launches, it will emit an 'app:second-instance' event
+          (check the Events tab for lifecycle events).
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Global Shortcuts</h2>
+        <p class="description">Register system-wide keyboard shortcuts (limited mode on macOS)</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="shortcutAccelerator" placeholder="e.g., Cmd+Shift+K" style="width: 200px;">
+          <button (click)="registerShortcut()">Register</button>
+          <button (click)="unregisterShortcut()">Unregister</button>
+        </div>
+        <div class="button-group">
+          <button (click)="getRegisteredShortcuts()">List Shortcuts</button>
+          <button (click)="unregisterAllShortcuts()">Unregister All</button>
+        </div>
+        <div class="info-grid" *ngIf="registeredShortcuts.length > 0">
+          <div class="info-item">
+            <span class="label">Registered</span>
+            <span class="value">{{ registeredShortcuts.join(', ') }}</span>
+          </div>
+        </div>
+        <div class="result" *ngIf="shortcutTriggered">
+          Last triggered: <strong>{{ shortcutTriggered }}</strong>
+        </div>
+        <p class="hint" *ngIf="registeredShortcuts.length === 0">
+          Note: Global shortcuts require Accessibility permissions on macOS.
+          Currently running in limited mode.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Dock Badge</h2>
+        <p class="description">Set badge text on the dock icon and bounce for attention</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="dockBadge" placeholder="Badge text (e.g., 5)" style="width: 120px;">
+          <button (click)="setDockBadge()">Set Badge</button>
+          <button (click)="clearDockBadge()">Clear</button>
+        </div>
+        <div class="button-group">
+          <button (click)="getDockBadge()">Get Badge</button>
+          <button (click)="bounceDock(false)">Bounce Once</button>
+          <button (click)="bounceDock(true)">Bounce Critical</button>
+        </div>
+        <div class="result" *ngIf="currentDockBadge">
+          Current badge: <strong>{{ currentDockBadge }}</strong>
+        </div>
+        <div class="button-group" style="margin-top: 12px;">
+          <button (click)="checkDockSupported()">Check Support</button>
+        </div>
+        <div class="status-line" *ngIf="dockSupported !== undefined">
+          <span class="status-indicator" [class.ready]="dockSupported" [class.pending]="!dockSupported"></span>
+          Dock badge is {{ dockSupported ? 'supported' : 'not supported' }} on this platform
+        </div>
+      </div>
+    </section>
+
+    <!-- System Info -->
+    <section *ngIf="activeTab === 'system'" class="tab-content">
+      <div class="card">
+        <h2>System Information</h2>
+        <p class="description">Access OS and JVM information from Java</p>
+        <div class="button-group">
+          <button (click)="getSystemInfo()">Get System Info</button>
+          <button (click)="getEnvironmentInfo()">Get Environment</button>
+        </div>
+        <div class="info-grid" *ngIf="systemInfo">
+          <div class="info-item">
+            <span class="label">OS</span>
+            <span class="value">{{ systemInfo.osName }} {{ systemInfo.osVersion }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Architecture</span>
+            <span class="value">{{ systemInfo.osArch }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Java</span>
+            <span class="value">{{ systemInfo.javaVersion }} ({{ systemInfo.javaVendor }})</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Processors</span>
+            <span class="value">{{ systemInfo.processors }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Memory</span>
+            <span class="value">{{ systemInfo.freeMemoryMb }}MB free / {{ systemInfo.maxMemoryMb }}MB max</span>
+          </div>
+        </div>
+        <pre class="code-block" *ngIf="envInfo">{{ envInfo | json }}</pre>
+      </div>
+    </section>
+
+    <!-- Clipboard -->
+    <section *ngIf="activeTab === 'clipboard'" class="tab-content">
+      <div class="card">
+        <h2>Clipboard Access (Custom Commands)</h2>
+        <p class="description">Read/write system clipboard via custom Java commands</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="clipboardText" placeholder="Text to copy" />
+          <button (click)="clipboardWrite()">Copy to Clipboard</button>
+        </div>
+        <div class="button-group">
+          <button (click)="clipboardRead()">Read from Clipboard</button>
+        </div>
+        <div class="result" *ngIf="clipboardContent">
+          <strong>Clipboard content:</strong> {{ clipboardContent }}
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Clipboard API (Built-in)</h2>
+        <p class="description">Using Krema's built-in clipboard:readText, clipboard:writeText</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="clipboardText" placeholder="Text to copy" />
+          <button (click)="builtinClipboardWrite()">Write (Built-in)</button>
+        </div>
+        <div class="button-group">
+          <button (click)="builtinClipboardRead()">Read (Built-in)</button>
+          <button (click)="checkClipboardFormats()">Check Formats</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shell / OS -->
+    <section *ngIf="activeTab === 'shell'" class="tab-content">
+      <div class="card">
+        <h2>Shell Commands</h2>
+        <p class="description">Execute shell commands and open URLs/files via Java</p>
+        <div class="button-group">
+          <button (click)="openUrl('https://github.com')">Open GitHub</button>
+          <button (click)="openUrl('https://angular.io')">Open Angular.io</button>
+          <button (click)="showNotification()">Show Notification</button>
+        </div>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="commandInput" placeholder="Enter command (e.g., ls -la)" />
+          <button (click)="runCommand()">Run</button>
+        </div>
+        <pre class="code-block" *ngIf="commandOutput">{{ commandOutput }}</pre>
+      </div>
+
+      <div class="card">
+        <h2>Built-in Shell APIs</h2>
+        <p class="description">shell:open, shell:showItemInFolder, shell:openWith</p>
+        <div class="button-group">
+          <button (click)="showInFinder()">Reveal Current in Finder</button>
+          <button (click)="openWithApp()">Open URL with Safari</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- File System -->
+    <section *ngIf="activeTab === 'files'" class="tab-content">
+      <div class="card">
+        <h2>File System (Custom Commands)</h2>
+        <p class="description">Access file system via custom Java commands in Commands.java</p>
+        <div class="button-group">
+          <button (click)="getPaths()">Get System Paths</button>
+          <button (click)="listDirectory(currentPath)">List Current Directory</button>
+        </div>
+        <div class="info-grid" *ngIf="paths">
+          <div class="info-item" *ngFor="let item of pathItems">
+            <span class="label">{{ item.label }}</span>
+            <span class="value clickable" (click)="listDirectory(item.path)">{{ item.path }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="files.length > 0">
+        <h2>{{ currentPath }}</h2>
+        <div class="file-list">
+          <div
+            class="file-item"
+            *ngFor="let file of files"
+            (click)="file.isDirectory ? listDirectory(file.path) : selectFile(file)">
+            <span class="icon">{{ file.isDirectory ? '📁' : '📄' }}</span>
+            <span class="name">{{ file.name }}</span>
+            <span class="size" *ngIf="!file.isDirectory">{{ formatSize(file.size) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="selectedFile">
+        <h2>{{ selectedFile.name }}</h2>
+        <button (click)="readFile(selectedFile.path)" *ngIf="!fileContent">Read File</button>
+        <pre class="code-block file-content" *ngIf="fileContent">{{ fileContent }}</pre>
+      </div>
+
+      <div class="card">
+        <h2>FS Plugin (Auto-Discovered)</h2>
+        <p class="description">
+          These commands come from FsPlugin, loaded automatically via ServiceLoader.
+          Commands are prefixed with <code>fs:</code> (e.g., fs:exists, fs:readDir, fs:stat).
+        </p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="fsPath" placeholder="Enter a path" />
+        </div>
+        <div class="button-group">
+          <button (click)="fsCheckExists()">fs:exists</button>
+          <button (click)="fsGetStat()">fs:stat</button>
+          <button (click)="fsListDir()">fs:readDir</button>
+          <button (click)="fsReadFile()">fs:readTextFile</button>
+        </div>
+        <div class="info-grid" *ngIf="fsExistsResult !== null">
+          <div class="info-item">
+            <span class="label">Exists</span>
+            <span class="value">{{ fsExistsResult }}</span>
+          </div>
+        </div>
+        <div class="info-grid" *ngIf="fsStat">
+          <div class="info-item">
+            <span class="label">Name</span>
+            <span class="value">{{ fsStat.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Path</span>
+            <span class="value">{{ fsStat.path }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Type</span>
+            <span class="value">{{ fsStat.isDirectory ? 'Directory' : 'File' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Size</span>
+            <span class="value">{{ formatSize(fsStat.size) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Modified</span>
+            <span class="value">{{ fsStat.modifiedTime | date:'medium' }}</span>
+          </div>
+        </div>
+        <div class="result" *ngIf="fsPluginError" style="color: #e74c3c;">{{ fsPluginError }}</div>
+      </div>
+
+      <div class="card" *ngIf="fsFiles.length > 0">
+        <h2>{{ fsCurrentDir }} <span style="font-size: 0.7em; opacity: 0.6;">(via fs:readDir)</span></h2>
+        <div class="file-list">
+          <div
+            class="file-item"
+            *ngFor="let file of fsFiles"
+            (click)="fsNavigateDir(file)">
+            <span class="icon">{{ file.isDirectory ? '📁' : '📄' }}</span>
+            <span class="name">{{ file.name }}</span>
+            <span class="size" *ngIf="!file.isDirectory">{{ formatSize(file.size) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>FS Plugin - Write & Read</h2>
+        <p class="description">Write a file with fs:writeTextFile, then read it back with fs:readTextFile</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="fsWritePath" placeholder="File path to write" />
+        </div>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="fsWriteContent" placeholder="Content to write" />
+        </div>
+        <div class="button-group">
+          <button (click)="fsWriteFile()">Write File</button>
+          <button (click)="fsWriteAndReadBack()">Write & Read Back</button>
+        </div>
+        <pre class="code-block" *ngIf="fsReadResult">{{ fsReadResult }}</pre>
+      </div>
+    </section>
+
+    <!-- Secure Storage -->
+    <section *ngIf="activeTab === 'securestorage'" class="tab-content">
+      <div class="card">
+        <h2>Secure Storage (Platform Keychain)</h2>
+        <p class="description">Store and retrieve secrets using the platform's native credential store (Keychain / Credential Manager / Secret Service)</p>
+        <div class="input-group">
+          <input type="text" [(ngModel)]="ssKey" placeholder="Key name" />
+          <input type="text" [(ngModel)]="ssValue" placeholder="Secret value" />
+        </div>
+        <div class="button-group">
+          <button (click)="ssSet()">Set</button>
+          <button (click)="ssGet()">Get</button>
+          <button (click)="ssDelete()">Delete</button>
+          <button (click)="ssHas()">Has</button>
+        </div>
+        <div class="result" *ngIf="ssResult">{{ ssResult }}</div>
+      </div>
+    </section>
+    <!-- Logging -->
+    <section *ngIf="activeTab === 'logging'" class="tab-content">
+      <div class="card">
+        <h2>Structured Logging</h2>
+        <p class="description">Send log messages to the backend. Logs are written as JSON Lines to rotating .jsonl files with app metadata (name, version, OS, session ID).</p>
+        <div class="input-group">
+          <select [(ngModel)]="logLevel" style="width: 100px;">
+            <option value="trace">TRACE</option>
+            <option value="debug">DEBUG</option>
+            <option value="info">INFO</option>
+            <option value="warn">WARN</option>
+            <option value="error">ERROR</option>
+          </select>
+          <input type="text" [(ngModel)]="logMessage" placeholder="Log message" (keyup.enter)="sendLog()" />
+          <button (click)="sendLog()">Send</button>
+        </div>
+        <div class="button-group">
+          <button (click)="sendAllLevels()">Send All Levels</button>
+          <button (click)="clearLogHistory()" [disabled]="logHistory.length === 0">Clear History</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Log File</h2>
+        <p class="description">JSON Lines output location (app.jsonl with rotation)</p>
+        <div class="button-group">
+          <button (click)="getLogFilePath()">Get Log Path</button>
+          <button (click)="revealLogFile()">Reveal in Finder</button>
+        </div>
+        <div class="result" *ngIf="logFilePath">{{ logFilePath }}</div>
+        <p class="hint">
+          Each line in app.jsonl is a JSON object with: timestamp, level, logger, message, appName, appVersion, os, sessionId.
+          Null fields (errorMessage, stackTrace) are omitted for non-error entries.
+        </p>
+      </div>
+
+      <div class="card" *ngIf="logHistory.length > 0">
+        <h2>Sent Log History</h2>
+        <p class="description">Recent log messages sent from this session</p>
+        <div class="event-log">
+          <div class="event-item" *ngFor="let entry of logHistory">
+            <span class="event-id" [style.color]="entry.level === 'error' ? '#e74c3c' : entry.level === 'warn' ? '#f39c12' : entry.level === 'debug' ? '#3498db' : entry.level === 'trace' ? '#95a5a6' : '#2ecc71'">{{ entry.level | uppercase }}</span>
+            <span class="event-time">{{ entry.timestamp | date:'HH:mm:ss.SSS' }}</span>
+            <span style="margin-left: 8px; opacity: 0.8;">{{ entry.message }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Error Display -->
+  <div class="error-toast" *ngIf="lastError" (click)="lastError = ''">
+    <span class="icon">⚠️</span>
+    <span class="message">{{ lastError }}</span>
+    <span class="close">×</span>
+  </div>
+
+  <footer>
+    <p>Open DevTools (Cmd+Option+I) to see IPC messages</p>
+  </footer>
+</div>

@@ -1,0 +1,174 @@
+{
+  "foreign": {
+    "downcalls": [
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["int", "void*"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*"]
+      },
+      {
+        "returnType": "long",
+        "parameterTypes": ["void*", "void*"]
+      },
+      {
+        "returnType": "bool",
+        "parameterTypes": ["void*", "void*"]
+      },
+      {
+        "returnType": "double",
+        "parameterTypes": ["void*", "void*"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "int"]
+      },
+      {
+        "returnType": "long",
+        "parameterTypes": ["void*", "void*", "int"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "long"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "void*"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "void*"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "int", "int", "int"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "int"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "long"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "double"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "bool"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "double", "double"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "double", "double", "double", "double", "int"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "void*", "void*"]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "int", "void*"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "void*", "void*"]
+      },
+      {
+        "returnType": "bool",
+        "parameterTypes": ["void*", "void*", "void*", "void*"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "void*", "void*", "void*"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "double"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "long", "void*"]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "void*", "long"]
+      },
+      {
+        "returnType": "struct(double, double, double, double)",
+        "parameterTypes": ["void*", "void*"]
+      },
+
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*"],
+        "options": { "firstVariadicArg": 2 }
+      },
+      {
+        "returnType": "long",
+        "parameterTypes": ["void*", "void*"],
+        "options": { "firstVariadicArg": 2 }
+      },
+      {
+        "returnType": "double",
+        "parameterTypes": ["void*", "void*"],
+        "options": { "firstVariadicArg": 2 }
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "void*"],
+        "options": { "firstVariadicArg": 2 }
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "int"],
+        "options": { "firstVariadicArg": 2 }
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "long"],
+        "options": { "firstVariadicArg": 2 }
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": ["void*", "void*", "double", "double", "double", "double"],
+        "options": { "firstVariadicArg": 2 }
+      },
+      {
+        "returnType": "struct(double, double)",
+        "parameterTypes": ["void*", "void*"],
+        "options": { "firstVariadicArg": 2 }
+      },
+      {
+        "returnType": "struct(double, double, double, double)",
+        "parameterTypes": ["void*", "void*"],
+        "options": { "firstVariadicArg": 2 }
+      }
+    ],
+    "upcalls": [
+      {
+        "returnType": "void",
+        "parameterTypes": ["void*", "void*", "void*"]
+      }
+    ]
+  }
+}

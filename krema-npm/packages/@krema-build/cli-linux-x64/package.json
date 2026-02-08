@@ -1,0 +1,13 @@
+{
+  "name": "@krema-build/cli-linux-x64",
+  "version": "0.1.0",
+  "description": "Krema CLI native binary for Linux x64",
+  "license": "BSL-1.1",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "files": ["bin/krema"],
+  "preferUnplugged": true,
+  "publishConfig": {
+    "access": "public"
+  }
+}

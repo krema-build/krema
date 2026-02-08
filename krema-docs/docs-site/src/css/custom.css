@@ -1,0 +1,259 @@
+/**
+ * Krema documentation site custom styles
+ * Dark charcoal base with amber/gold accents
+ */
+
+/* ===== Custom Fonts ===== */
+@font-face {
+  font-family: 'Quantify';
+  src: url('/fonts/QuantifyBold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ===== CSS Variables ===== */
+:root {
+  /* Primary: Warm amber */
+  --ifm-color-primary: #b86e1a;
+  --ifm-color-primary-dark: #a56317;
+  --ifm-color-primary-darker: #9c5d16;
+  --ifm-color-primary-darkest: #804d12;
+  --ifm-color-primary-light: #cb7a1d;
+  --ifm-color-primary-lighter: #d2801f;
+  --ifm-color-primary-lightest: #e89933;
+
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(184, 110, 26, 0.1);
+
+  /* Fonts */
+  --ifm-font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --ifm-heading-font-family: var(--ifm-font-family-base);
+
+  /* Custom palette tokens */
+  --krema-accent: #f0a030;
+  --krema-accent-light: #f4b860;
+  --krema-dark-bg: #0d1117;
+  --krema-dark-surface: #161b22;
+}
+
+[data-theme='dark'] {
+  /* Bright amber gold for dark mode */
+  --ifm-color-primary: #f0a030;
+  --ifm-color-primary-dark: #ee9418;
+  --ifm-color-primary-darker: #e88e10;
+  --ifm-color-primary-darkest: #c47608;
+  --ifm-color-primary-light: #f2ac48;
+  --ifm-color-primary-lighter: #f4b258;
+  --ifm-color-primary-lightest: #f8c880;
+  --docusaurus-highlighted-code-line-bg: rgba(240, 160, 48, 0.15);
+
+  --ifm-background-color: #0d1117;
+  --ifm-background-surface-color: #161b22;
+}
+
+/* ===== Navy Theme ===== */
+html[data-krema-theme='navy'] {
+  --ifm-color-primary: #5BAFFF;
+  --ifm-color-primary-dark: #3D9BF5;
+  --ifm-color-primary-darker: #2B8BE8;
+  --ifm-color-primary-darkest: #1A6BC4;
+  --ifm-color-primary-light: #7BC1FF;
+  --ifm-color-primary-lighter: #93CFFF;
+  --ifm-color-primary-lightest: #B5DFFF;
+  --docusaurus-highlighted-code-line-bg: rgba(91, 175, 255, 0.15);
+
+  --ifm-background-color: #16214d;
+  --ifm-background-surface-color: #1d2b5e;
+
+  --krema-dark-bg: #111a3d;
+  --krema-dark-surface: #1d2b5e;
+
+  --ifm-color-emphasis-0: #16214d;
+  --ifm-color-emphasis-100: #1d2b5e;
+  --ifm-color-emphasis-200: #2a3a72;
+  --ifm-color-emphasis-300: #3a4d8a;
+  --ifm-color-emphasis-400: #5168a5;
+  --ifm-color-emphasis-500: #7088bc;
+  --ifm-color-emphasis-600: #90a5ce;
+  --ifm-color-emphasis-700: #b0bfdd;
+  --ifm-color-emphasis-800: #d0d8e8;
+  --ifm-color-emphasis-900: #e8ecf4;
+  --ifm-color-emphasis-1000: #f0f4ff;
+
+  --ifm-hover-overlay: rgba(255, 255, 255, 0.05);
+}
+
+html[data-krema-theme='navy'] .navbar {
+  background: rgba(22, 33, 77, 0.85);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid rgba(91, 175, 255, 0.1);
+}
+
+html[data-krema-theme='navy'] .footer--dark {
+  background: linear-gradient(180deg, #1d2b5e, #111a3d);
+  border-top: 1px solid rgba(91, 175, 255, 0.1);
+}
+
+html[data-krema-theme='navy'] .footer--dark .footer__title {
+  color: #5BAFFF;
+}
+
+html[data-krema-theme='navy'] [class*='codeBlockContainer'] {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-krema-theme='navy'] [class*='codeBlockTitle'] {
+  background: #1d2b5e;
+}
+
+html[data-krema-theme='navy'] th {
+  background-color: var(--ifm-color-primary-darkest);
+}
+
+/* ===== Smooth Scrolling ===== */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ===== Typography ===== */
+h1 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.markdown h2 {
+  font-size: 1.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+/* ===== Hero Section ===== */
+.hero--primary {
+  --ifm-hero-background-color: #0d1117;
+  --ifm-hero-text-color: #f0f6fc;
+}
+
+[data-theme='dark'] .hero--primary {
+  --ifm-hero-background-color: #0d1117;
+}
+
+/* ===== Navbar — Glassmorphism ===== */
+.navbar {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  box-shadow: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .navbar {
+  background: rgba(13, 17, 23, 0.85);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid rgba(240, 160, 48, 0.1);
+}
+
+/* ===== Footer ===== */
+.footer--dark {
+  --ifm-footer-background-color: transparent;
+  background: linear-gradient(180deg, #161b22, #0d1117);
+  border-top: 1px solid rgba(240, 160, 48, 0.1);
+}
+
+.footer--dark .footer__title {
+  color: #f0a030;
+}
+
+.footer--dark .footer__link-item:hover {
+  color: #f4b860;
+}
+
+/* ===== Code Blocks (global) ===== */
+.prism-code {
+  border-radius: 10px;
+}
+
+[class*='codeBlockContainer'] {
+  border-radius: 10px;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  overflow: hidden;
+}
+
+[data-theme='dark'] [class*='codeBlockContainer'] {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Code block title bar with traffic-light dots */
+[class*='codeBlockTitle'] {
+  border-radius: 10px 10px 0 0;
+  position: relative;
+  padding-left: 4.5rem;
+}
+
+[class*='codeBlockTitle']::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff5f57;
+  box-shadow:
+    20px 0 0 #febc2e,
+    40px 0 0 #28c840;
+}
+
+/* ===== Sidebar ===== */
+.menu__link--active {
+  font-weight: 600;
+}
+
+/* ===== Admonitions ===== */
+.admonition {
+  border-radius: 8px;
+}
+
+/* ===== Table styles ===== */
+table {
+  display: table;
+  width: 100%;
+}
+
+th {
+  background-color: var(--ifm-color-primary-lightest);
+  color: white;
+}
+
+[data-theme='dark'] th {
+  background-color: var(--ifm-color-primary-darkest);
+}
+
+/* ===== Scroll Fade-In Animation ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadeInOnScroll {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.fadeInOnScroll.visible {
+  animation: fadeInUp 0.6s ease-out forwards;
+}

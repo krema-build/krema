@@ -1,0 +1,8 @@
+{
+  "resources": {
+    "includes": [
+      { "pattern": "META-INF/services/.*" },
+      { "pattern": "org/sqlite/native/.*" }
+    ]
+  }
+}

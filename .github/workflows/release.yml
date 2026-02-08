@@ -1,0 +1,208 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  JAVA_VERSION: '25'
+
+jobs:
+  build-jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Build fat JAR
+        run: mvn clean package -q -DskipTests
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: krema-cli-jar
+          path: krema/krema-cli/target/krema-cli.jar
+
+  build-native:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+            platform: darwin-arm64
+            runner-arch: ARM64
+          - os: macos-latest
+            arch: x64
+            platform: darwin-x64
+            runner-arch: ARM64
+            graalvm-arch: x64
+          - os: ubuntu-latest
+            arch: x64
+            platform: linux-x64
+            runner-arch: X64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            platform: linux-arm64
+            runner-arch: ARM64
+          - os: windows-latest
+            arch: x64
+            platform: win32-x64
+            runner-arch: X64
+          - os: windows-latest
+            arch: arm64
+            platform: win32-arm64
+            runner-arch: X64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'graalvm'
+          architecture: ${{ matrix.graalvm-arch || matrix.arch }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev build-essential pkg-config
+
+      - name: Build fat JAR
+        run: mvn clean package -q -DskipTests
+
+      - name: Build native image (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          native-image \
+            --enable-native-access=ALL-UNNAMED \
+            -H:+UnlockExperimentalVMOptions \
+            -H:-CheckToolchain \
+            -Djava.awt.headless=true \
+            -jar krema/krema-cli/target/krema-cli.jar \
+            -o krema-${{ matrix.platform }}
+
+      - name: Build native image (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          native-image \
+            --enable-native-access=ALL-UNNAMED \
+            -H:+UnlockExperimentalVMOptions \
+            -H:-CheckToolchain \
+            -Djava.awt.headless=true \
+            -jar krema/krema-cli/target/krema-cli.jar \
+            -o krema-${{ matrix.platform }}
+
+      - name: Upload native binary (Unix)
+        if: runner.os != 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: krema-native-${{ matrix.platform }}
+          path: krema-${{ matrix.platform }}
+
+      - name: Upload native binary (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: krema-native-${{ matrix.platform }}
+          path: krema-${{ matrix.platform }}.exe
+
+  publish-release:
+    needs: [build-jar, build-native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/krema-cli-jar/krema-cli.jar
+            artifacts/krema-native-darwin-arm64/krema-darwin-arm64
+            artifacts/krema-native-darwin-x64/krema-darwin-x64
+            artifacts/krema-native-linux-x64/krema-linux-x64
+            artifacts/krema-native-linux-arm64/krema-linux-arm64
+            artifacts/krema-native-win32-x64/krema-win32-x64.exe
+            artifacts/krema-native-win32-arm64/krema-win32-arm64.exe
+
+  publish-npm:
+    needs: [build-jar, build-native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare platform packages
+        run: |
+          UNIX_PLATFORMS=("darwin-arm64" "darwin-x64" "linux-x64" "linux-arm64")
+          for platform in "${UNIX_PLATFORMS[@]}"; do
+            PKG_DIR="krema-npm/packages/@krema-build/cli-${platform}"
+            cp "artifacts/krema-native-${platform}/krema-${platform}" "${PKG_DIR}/bin/krema"
+            chmod +x "${PKG_DIR}/bin/krema"
+            cd "$PKG_DIR"
+            npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+            cd "$GITHUB_WORKSPACE"
+          done
+
+          # Windows
+          for win_platform in "win32-x64" "win32-arm64"; do
+            PKG_DIR="krema-npm/packages/@krema-build/cli-${win_platform}"
+            cp "artifacts/krema-native-${win_platform}/krema-${win_platform}.exe" "${PKG_DIR}/bin/krema.exe"
+            cd "$PKG_DIR"
+            npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Update main package version
+        run: |
+          cd krema-npm/packages/krema
+          npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+
+      - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          PLATFORMS=("darwin-arm64" "darwin-x64" "linux-x64" "linux-arm64" "win32-x64" "win32-arm64")
+          for platform in "${PLATFORMS[@]}"; do
+            cd "krema-npm/packages/@krema-build/cli-${platform}"
+            npm publish --access public || true
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Publish main package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd krema-npm/packages/krema
+          npm publish --access public

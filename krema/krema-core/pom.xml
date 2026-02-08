@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>build.krema</groupId>
+        <artifactId>krema-parent</artifactId>
+        <version>0.1.0</version>
+    </parent>
+
+    <artifactId>krema-core</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Krema Core</name>
+    <description>Core framework for building desktop apps with system webviews</description>
+
+    <licenses>
+        <license>
+            <name>Business Source License 1.1</name>
+            <url>https://github.com/krema-build/krema/blob/main/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>25</release>
+                    <parameters>true</parameters>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>build.krema</groupId>
+                            <artifactId>krema-processor</artifactId>
+                            <version>${project.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <executable>java</executable>
+                    <arguments>
+                        <argument>-XstartOnFirstThread</argument>
+                        <argument>--enable-native-access=ALL-UNNAMED</argument>
+                        <argument>-Djava.library.path=./lib</argument>
+                        <argument>-classpath</argument>
+                        <classpath/>
+                        <argument>build.krema.krema.demo.DemoApp</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>check-coverage</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.15</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <excludes>
+                                <!-- Platform-specific FFM bindings (untestable without native libs) -->
+                                <exclude>build/krema/core/webview/macos/**</exclude>
+                                <exclude>build/krema/core/webview/windows/**</exclude>
+                                <exclude>build/krema/core/webview/linux/**</exclude>
+                                <exclude>build/krema/core/webview/WebViewCLibEngine*</exclude>
+                                <exclude>build/krema/core/platform/linux/**</exclude>
+                                <exclude>build/krema/core/platform/windows/**</exclude>
+                                <exclude>build/krema/core/platform/NativeLibraryLoader*</exclude>
+                                <exclude>build/krema/core/native_/**</exclude>
+                                <exclude>build/krema/core/dialog/macos/**</exclude>
+                                <exclude>build/krema/core/dialog/linux/**</exclude>
+                                <exclude>build/krema/core/dialog/windows/**</exclude>
+                                <exclude>build/krema/core/dock/macos/**</exclude>
+                                <exclude>build/krema/core/menu/macos/**</exclude>
+                                <exclude>build/krema/core/menu/linux/**</exclude>
+                                <exclude>build/krema/core/menu/windows/**</exclude>
+                                <exclude>build/krema/core/notification/macos/**</exclude>
+                                <exclude>build/krema/core/notification/linux/**</exclude>
+                                <exclude>build/krema/core/notification/windows/**</exclude>
+                                <exclude>build/krema/core/screen/macos/**</exclude>
+                                <exclude>build/krema/core/screen/linux/**</exclude>
+                                <exclude>build/krema/core/screen/windows/**</exclude>
+                                <exclude>build/krema/core/shortcut/macos/**</exclude>
+                                <exclude>build/krema/core/shortcut/linux/**</exclude>
+                                <exclude>build/krema/core/shortcut/windows/**</exclude>
+                                <exclude>build/krema/core/window/macos/**</exclude>
+                                <exclude>build/krema/core/window/linux/**</exclude>
+                                <exclude>build/krema/core/window/windows/**</exclude>
+                                <exclude>build/krema/core/splash/**</exclude>
+                                <exclude>build/krema/core/api/securestorage/**</exclude>
+                                <exclude>build/krema/core/demo/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

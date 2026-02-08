@@ -1,0 +1,13 @@
+{
+  "name": "@krema-build/cli-win32-x64",
+  "version": "0.1.0",
+  "description": "Krema CLI native binary for Windows x64",
+  "license": "BSL-1.1",
+  "os": ["win32"],
+  "cpu": ["x64"],
+  "files": ["bin/krema.exe"],
+  "preferUnplugged": true,
+  "publishConfig": {
+    "access": "public"
+  }
+}

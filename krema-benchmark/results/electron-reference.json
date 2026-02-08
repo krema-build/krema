@@ -1,0 +1,23 @@
+{
+  "framework": "Electron",
+  "version": "28+",
+  "lastUpdated": "2025-01-01",
+  "notes": "Numbers from Electron documentation and community benchmarks. Actual values vary by app complexity and hardware.",
+  "sources": [
+    "https://www.electronjs.org/docs/latest/tutorial/performance",
+    "https://github.com/nicedoc/nicedoc/issues/1",
+    "https://www.nicedoc.io/nicedoc/nicedoc"
+  ],
+  "startup": {
+    "coldStartMs": "500-2000",
+    "description": "Includes Chromium initialization. Simple apps ~500ms, complex apps 1-2s."
+  },
+  "memory": {
+    "idleRssMb": "80-150",
+    "description": "Minimum ~80MB for a simple empty window. Each renderer process adds memory."
+  },
+  "bundleSize": {
+    "minimalAppMb": "150-200",
+    "description": "Includes full Chromium runtime. Compression helps but baseline is ~150MB."
+  }
+}

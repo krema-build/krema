@@ -1,0 +1,13 @@
+{
+  "resources": {
+    "includes": [
+      { "pattern": "krema-bridge\\.js" },
+      { "pattern": "krema-dragdrop\\.js" },
+      { "pattern": "krema-notify" },
+      { "pattern": "krema-types\\.d\\.ts" },
+      { "pattern": "notify-helper\\.swift" },
+      { "pattern": "META-INF/services/.*" },
+      { "pattern": "native/.*" }
+    ]
+  }
+}

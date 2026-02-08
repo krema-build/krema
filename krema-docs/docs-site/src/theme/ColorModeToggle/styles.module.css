@@ -1,0 +1,70 @@
+.wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ifm-navbar-link-color);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.toggle:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  min-width: 140px;
+}
+
+.dropdown li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ifm-font-color-base);
+  font-size: 0.85rem;
+  font-family: var(--ifm-font-family-base);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.option:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.optionActive {
+  background: var(--ifm-color-emphasis-100);
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+}

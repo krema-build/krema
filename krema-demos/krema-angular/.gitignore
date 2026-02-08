@@ -1,0 +1,26 @@
+# Dependencies
+/node_modules
+
+# Build output
+/dist
+/target
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Angular
+.angular/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Java
+*.class
+*.jar

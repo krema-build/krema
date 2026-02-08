@@ -1,0 +1,280 @@
+name: Build Native Libraries
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    paths:
+      - 'krema/scripts/build-webview-*.sh'
+      - '.github/workflows/build-native-libs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev build-essential pkg-config
+
+      - name: Build libwebview.so
+        run: ./krema/scripts/build-webview-linux.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libwebview-linux-x64
+          path: krema/krema-core/lib/libwebview.so
+
+  build-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev build-essential pkg-config
+
+      - name: Build libwebview.so
+        run: ./krema/scripts/build-webview-linux.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libwebview-linux-arm64
+          path: krema/krema-core/lib/libwebview.so
+
+  build-windows-x64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake git unzip curl
+
+      - name: Build webview.dll
+        shell: msys2 {0}
+        run: ./krema/scripts/build-webview-windows.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webview-windows-x64
+          path: |
+            krema/krema-core/lib/webview.dll
+            krema/krema-core/lib/WebView2Loader.dll
+
+  build-windows-arm64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake git unzip curl
+
+      - name: Download llvm-mingw for ARM64 cross-compilation
+        shell: msys2 {0}
+        run: |
+          LLVM_MINGW_VERSION="20250114"
+          LLVM_MINGW_URL="https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-x86_64.zip"
+          curl -sL "$LLVM_MINGW_URL" -o /tmp/llvm-mingw.zip
+          unzip -q /tmp/llvm-mingw.zip -d /opt
+          mv /opt/llvm-mingw-* /opt/llvm-mingw
+
+      - name: Build webview.dll for ARM64
+        shell: msys2 {0}
+        run: |
+          PROJECT_DIR="$(cd krema && pwd)"
+          BUILD_DIR="$PROJECT_DIR/.webview-build"
+          WEBVIEW_REPO="https://github.com/webview/webview.git"
+          WEBVIEW2_VERSION="1.0.2535.41"
+
+          # Clone webview
+          mkdir -p "$BUILD_DIR"
+          git clone --quiet --depth 1 "$WEBVIEW_REPO" "$BUILD_DIR/webview"
+
+          # Download WebView2 SDK
+          WEBVIEW2_DIR="$BUILD_DIR/webview2"
+          mkdir -p "$WEBVIEW2_DIR"
+          NUGET_URL="https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/${WEBVIEW2_VERSION}"
+          curl -sL "$NUGET_URL" -o "$BUILD_DIR/webview2.zip"
+          unzip -q "$BUILD_DIR/webview2.zip" -d "$WEBVIEW2_DIR"
+
+          WEBVIEW_SRC="$BUILD_DIR/webview"
+          WEBVIEW2_INCLUDE="$WEBVIEW2_DIR/build/native/include"
+          OUTFILE="$BUILD_DIR/webview.dll"
+
+          # Find source file
+          if [ -f "$WEBVIEW_SRC/webview.cc" ]; then
+            SRC_FILE="$WEBVIEW_SRC/webview.cc"
+          elif [ -f "$WEBVIEW_SRC/core/src/webview.cc" ]; then
+            SRC_FILE="$WEBVIEW_SRC/core/src/webview.cc"
+          else
+            SRC_FILE=""
+          fi
+
+          CC="/opt/llvm-mingw/bin/aarch64-w64-mingw32-g++"
+
+          if [ -n "$SRC_FILE" ]; then
+            "$CC" "$SRC_FILE" -shared \
+              -DWEBVIEW_BUILD_SHARED -DWEBVIEW_MSEDGE \
+              -std=c++17 \
+              -I"$WEBVIEW_SRC/core/include" \
+              -I"$WEBVIEW2_INCLUDE" \
+              -lole32 -lcomctl32 -lshlwapi -lversion \
+              -o "$OUTFILE"
+          else
+            WRAPPER="$BUILD_DIR/webview_wrapper.cc"
+            cat > "$WRAPPER" << 'WRAPPER_EOF'
+          #define WEBVIEW_BUILD_SHARED
+          #define WEBVIEW_MSEDGE
+          #include "webview.h"
+          WRAPPER_EOF
+            "$CC" "$WRAPPER" -shared \
+              -I"$WEBVIEW_SRC" \
+              -I"$WEBVIEW2_INCLUDE" \
+              -std=c++17 \
+              -lole32 -lcomctl32 -lshlwapi -lversion \
+              -o "$OUTFILE"
+          fi
+
+          # Copy outputs
+          mkdir -p "$PROJECT_DIR/krema-core/lib"
+          cp "$OUTFILE" "$PROJECT_DIR/krema-core/lib/webview.dll"
+
+          # Copy ARM64 WebView2Loader.dll
+          LOADER_DLL="$WEBVIEW2_DIR/build/native/arm64/WebView2Loader.dll"
+          if [ -f "$LOADER_DLL" ]; then
+            cp "$LOADER_DLL" "$PROJECT_DIR/krema-core/lib/WebView2Loader.dll"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webview-windows-arm64
+          path: |
+            krema/krema-core/lib/webview.dll
+            krema/krema-core/lib/WebView2Loader.dll
+
+  build-macos-arm64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build libwebview.dylib
+        run: ./krema/scripts/build-webview-macos.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libwebview-macos-arm64
+          path: krema/krema-core/lib/libwebview.dylib
+
+  build-macos-x64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build libwebview.dylib for x86_64
+        run: |
+          PROJECT_DIR="$(cd krema && pwd)"
+          BUILD_DIR="$PROJECT_DIR/.webview-build"
+          OUTPUT_DIR="$PROJECT_DIR/krema-core/lib"
+          WEBVIEW_REPO="https://github.com/webview/webview.git"
+
+          mkdir -p "$BUILD_DIR"
+          git clone --quiet --depth 1 "$WEBVIEW_REPO" "$BUILD_DIR/webview"
+
+          WEBVIEW_SRC="$BUILD_DIR/webview"
+          OUTFILE="$BUILD_DIR/libwebview.dylib"
+
+          if [ -f "$WEBVIEW_SRC/webview.cc" ]; then
+            SRC_FILE="$WEBVIEW_SRC/webview.cc"
+          elif [ -f "$WEBVIEW_SRC/core/src/webview.cc" ]; then
+            SRC_FILE="$WEBVIEW_SRC/core/src/webview.cc"
+          else
+            SRC_FILE=""
+          fi
+
+          if [ -n "$SRC_FILE" ]; then
+            clang++ "$SRC_FILE" -dynamiclib \
+              -target x86_64-apple-macos10.12 \
+              -DWEBVIEW_BUILD_SHARED -DWEBVIEW_COCOA \
+              -std=c++11 \
+              -I"$WEBVIEW_SRC/core/include" \
+              -framework WebKit -framework Cocoa \
+              -o "$OUTFILE"
+          else
+            WRAPPER="$BUILD_DIR/webview_wrapper.cc"
+            cat > "$WRAPPER" << 'WRAPPER_EOF'
+          #define WEBVIEW_BUILD_SHARED
+          #define WEBVIEW_COCOA
+          #include "webview.h"
+          WRAPPER_EOF
+            clang++ "$WRAPPER" -dynamiclib \
+              -target x86_64-apple-macos10.12 \
+              -I"$WEBVIEW_SRC" \
+              -std=c++11 \
+              -framework WebKit -framework Cocoa \
+              -o "$OUTFILE"
+          fi
+
+          mkdir -p "$OUTPUT_DIR"
+          cp "$OUTFILE" "$OUTPUT_DIR/libwebview.dylib"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libwebview-macos-x64
+          path: krema/krema-core/lib/libwebview.dylib
+
+  commit-libs:
+    needs: [build-linux-x64, build-linux-arm64, build-windows-x64, build-windows-arm64, build-macos-arm64, build-macos-x64]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Copy libraries to lib/{os}/{arch}/
+        run: |
+          mkdir -p krema/krema-core/lib/{macos/{aarch64,x86_64},linux/{x86_64,aarch64},windows/{x86_64,aarch64}}
+          cp artifacts/libwebview-macos-arm64/libwebview.dylib   krema/krema-core/lib/macos/aarch64/
+          cp artifacts/libwebview-macos-x64/libwebview.dylib     krema/krema-core/lib/macos/x86_64/
+          cp artifacts/libwebview-linux-x64/libwebview.so        krema/krema-core/lib/linux/x86_64/
+          cp artifacts/libwebview-linux-arm64/libwebview.so      krema/krema-core/lib/linux/aarch64/
+          cp artifacts/webview-windows-x64/webview.dll           krema/krema-core/lib/windows/x86_64/
+          cp artifacts/webview-windows-x64/WebView2Loader.dll    krema/krema-core/lib/windows/x86_64/
+          cp artifacts/webview-windows-arm64/webview.dll          krema/krema-core/lib/windows/aarch64/
+          cp artifacts/webview-windows-arm64/WebView2Loader.dll   krema/krema-core/lib/windows/aarch64/
+
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add krema/krema-core/lib/
+          git diff --staged --quiet || git commit -m "chore: update native libraries"
+          git push

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>build.krema</groupId>
+    <artifactId>krema-build</artifactId>
+    <version>0.1.0</version>
+    <packaging>pom</packaging>
+
+    <name>Krema Build</name>
+    <description>Aggregator build for all Krema projects</description>
+
+    <licenses>
+        <license>
+            <name>Business Source License 1.1</name>
+            <url>https://github.com/krema-build/krema/blob/main/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <modules>
+        <module>krema</module>
+        <module>krema-plugins</module>
+        <module>krema-demos</module>
+        <module>krema-benchmark</module>
+    </modules>
+</project>

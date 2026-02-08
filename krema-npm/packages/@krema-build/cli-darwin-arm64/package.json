@@ -1,0 +1,13 @@
+{
+  "name": "@krema-build/cli-darwin-arm64",
+  "version": "0.1.0",
+  "description": "Krema CLI native binary for macOS ARM64",
+  "license": "BSL-1.1",
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "files": ["bin/krema"],
+  "preferUnplugged": true,
+  "publishConfig": {
+    "access": "public"
+  }
+}

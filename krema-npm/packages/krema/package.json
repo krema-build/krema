@@ -1,0 +1,44 @@
+{
+  "name": "krema",
+  "version": "0.1.0",
+  "description": "Lightweight desktop apps with system webviews — CLI tool",
+  "bin": {
+    "krema": "bin/krema.js"
+  },
+  "scripts": {
+    "postinstall": "node postinstall.js"
+  },
+  "optionalDependencies": {
+    "@krema-build/cli-darwin-arm64": "0.1.0",
+    "@krema-build/cli-darwin-x64": "0.1.0",
+    "@krema-build/cli-linux-x64": "0.1.0",
+    "@krema-build/cli-linux-arm64": "0.1.0",
+    "@krema-build/cli-win32-x64": "0.1.0",
+    "@krema-build/cli-win32-arm64": "0.1.0"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "postinstall.js"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "krema",
+    "desktop",
+    "webview",
+    "gui",
+    "native",
+    "cli"
+  ],
+  "license": "BSL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/krema-build/krema.git",
+    "directory": "krema-npm/packages/krema"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

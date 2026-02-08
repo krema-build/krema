@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>build.krema</groupId>
+        <artifactId>krema-parent</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../krema/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>krema-plugins</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Krema Plugins</name>
+    <description>Aggregator for Krema plugins</description>
+
+    <licenses>
+        <license>
+            <name>Business Source License 1.1</name>
+            <url>https://github.com/krema-build/krema/blob/main/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <modules>
+        <module>krema-plugin-sql</module>
+        <module>krema-plugin-websocket</module>
+        <module>krema-plugin-upload</module>
+        <module>krema-plugin-positioner</module>
+        <module>krema-plugin-autostart</module>
+    </modules>
+</project>
