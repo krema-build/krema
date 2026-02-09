@@ -86,13 +86,13 @@ Choose the installation method that works best for you:
 ### npm (recommended for web developers)
 
 ```bash
-npm install -g krema
+npm install -g @krema-build/krema
 ```
 
 Or use it without installing globally:
 
 ```bash
-npx krema init my-app --template react
+npx @krema-build/krema init my-app --template react
 ```
 
 :::tip No Java? No problem

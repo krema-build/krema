@@ -1,5 +1,5 @@
 {
-  "name": "krema",
+  "name": "@krema-build/krema",
   "version": "0.1.0",
   "description": "Lightweight desktop apps with system webviews — CLI tool",
   "bin": {

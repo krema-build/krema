@@ -9,7 +9,7 @@ Krema is to the Java ecosystem what [Tauri](https://tauri.app) is to Rust — li
 [![Build](https://github.com/krema-build/krema/actions/workflows/release.yml/badge.svg)](https://github.com/krema-build/krema/actions/workflows/release.yml)
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-blue.svg)](LICENSE)
 [![Java 25](https://img.shields.io/badge/Java-25-orange.svg)](https://jdk.java.net/25/)
-[![npm](https://img.shields.io/npm/v/krema)](https://www.npmjs.com/package/krema)
+[![npm](https://img.shields.io/npm/v/@krema-build/krema)](https://www.npmjs.com/package/@krema-build/krema)
 
 [Getting Started](#quick-start) · [Documentation](https://krema.build) · [Examples](krema-demos/)
 
@@ -53,7 +53,7 @@ Krema uses the OS-native webview (WebKit on macOS, WebView2 on Windows, WebKitGT
 
 ```bash
 # via npm
-npm install -g krema
+npm install -g @krema-build/krema
 
 # or via curl
 curl -fsSL https://krema.build/install.sh | bash

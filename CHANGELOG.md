@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Notification system (macOS, Linux, Windows)
 - Global keyboard shortcuts
 - Screen and window management APIs
-- npm distribution (`npm install -g krema`)
+- npm distribution (`npm install -g @krema-build/krema`)
 - curl installer (`curl -fsSL https://krema.build/install.sh | bash`)
 - Demo applications (React, Vue, Angular)
 - Error handling with global exception handler, crash reports, and `app:error` event

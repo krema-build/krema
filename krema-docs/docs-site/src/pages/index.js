@@ -56,11 +56,11 @@ function TerminalWindow({title, children}) {
 /* ===== Hero ===== */
 const heroInstallOptions = [
   {id: 'npm', label: 'npm', commands: [
-    {text: 'npm install -g krema'},
+    {text: 'npm install -g @krema-build/krema'},
     {text: 'krema init my-app --template react'},
   ]},
   {id: 'npx', label: 'npx', commands: [
-    {text: 'npx krema init my-app --template react'},
+    {text: 'npx @krema-build/krema init my-app --template react'},
   ]},
   {id: 'curl', label: 'curl', commands: [
     {text: 'curl -fsSL https://krema.build/install.sh | bash'},
@@ -357,7 +357,7 @@ function QuickStartSection() {
   const ref = useFadeInOnScroll();
 
   const npmCode = `# Install globally
-npm install -g krema
+npm install -g @krema-build/krema
 
 # Create a new project
 krema init my-app --template react
@@ -366,10 +366,10 @@ krema init my-app --template react
 cd my-app && krema dev`;
 
   const npxCode = `# No install needed
-npx krema init my-app --template react
+npx @krema-build/krema init my-app --template react
 
 # Start development
-cd my-app && npx krema dev`;
+cd my-app && npx @krema-build/krema dev`;
 
   const curlCode = `# Install via script
 curl -fsSL https://raw.githubusercontent.com/krema-build/krema/master/packages/install.sh | bash
