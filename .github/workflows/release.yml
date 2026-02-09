@@ -40,11 +40,10 @@ jobs:
             arch: arm64
             platform: darwin-arm64
             runner-arch: ARM64
-          - os: macos-latest
+          - os: macos-13
             arch: x64
             platform: darwin-x64
-            runner-arch: ARM64
-            graalvm-arch: x64
+            runner-arch: X64
           - os: ubuntu-latest
             arch: x64
             platform: linux-x64
@@ -70,7 +69,6 @@ jobs:
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'graalvm'
-          architecture: ${{ matrix.graalvm-arch || matrix.arch }}
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
