@@ -46,7 +46,7 @@ mvn test
 
 ## Pull Request Guidelines
 
-1. Fork the repository and create a branch from `main`
+1. Fork the repository and create a branch from `master`
 2. Keep PRs focused — one feature or fix per PR
 3. Include tests for new functionality
 4. Ensure all existing tests pass
