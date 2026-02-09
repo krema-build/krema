@@ -539,13 +539,13 @@ function install(): Promise<void>;
 Install the type definitions package:
 
 ```bash
-npm install @krema-app/api
+npm install @krema-build/api
 ```
 
 Usage:
 
 ```typescript
-import { invoke, on } from '@krema-app/api';
+import { invoke, on } from '@krema-build/api';
 
 interface User {
     id: string;
