@@ -1,5 +1,7 @@
 package build.krema.cli.init;
 
+import org.jline.keymap.BindingReader;
+import org.jline.keymap.KeyMap;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 
@@ -8,6 +10,7 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
+import org.jline.utils.InfoCmp.Capability;
 
 import java.io.IOException;
 
@@ -21,6 +24,8 @@ import java.util.stream.Collectors;
  * Interactive terminal prompts using JLine3.
  */
 public class InteractivePrompter {
+
+    private enum SelectOp { UP, DOWN, ACCEPT, IGNORE }
 
     private static final List<String> TEMPLATES = List.of("vanilla", "react", "vue", "svelte", "angular");
     private static final List<String> PACKAGE_MANAGERS = List.of("npm", "pnpm", "yarn");
@@ -67,27 +72,34 @@ public class InteractivePrompter {
         terminal.setAttributes(rawAttributes);
 
         try {
-            var nonBlockingReader = terminal.reader();
+            KeyMap<SelectOp> keyMap = new KeyMap<>();
+            keyMap.bind(SelectOp.UP, KeyMap.key(terminal, Capability.key_up));
+            keyMap.bind(SelectOp.DOWN, KeyMap.key(terminal, Capability.key_down));
+            keyMap.bind(SelectOp.ACCEPT, "\r", "\n");
+            keyMap.setNomatch(SelectOp.IGNORE);
+
+            BindingReader bindingReader = new BindingReader(terminal.reader());
             while (true) {
-                int c = nonBlockingReader.read();
-                if (c == -1) {
+                SelectOp op = bindingReader.readBinding(keyMap);
+                if (op == null) {
                     break;
                 }
 
-                if (c == 13 || c == 10) {
-                    break;
+                switch (op) {
+                    case UP:
+                        selected = (selected - 1 + options.size()) % options.size();
+                        break;
+                    case DOWN:
+                        selected = (selected + 1) % options.size();
+                        break;
+                    case ACCEPT:
+                        break;
+                    case IGNORE:
+                        continue;
                 }
 
-                if (c == 27) {
-                    int next = nonBlockingReader.read(50);
-                    if (next == '[') {
-                        int arrow = nonBlockingReader.read(50);
-                        if (arrow == 'A') {
-                            selected = (selected - 1 + options.size()) % options.size();
-                        } else if (arrow == 'B') {
-                            selected = (selected + 1) % options.size();
-                        }
-                    }
+                if (op == SelectOp.ACCEPT) {
+                    break;
                 }
 
                 // Move cursor up to re-render options
@@ -95,8 +107,6 @@ public class InteractivePrompter {
                 renderSelectOptions(options, selected);
                 terminal.writer().flush();
             }
-        } catch (IOException e) {
-            // Fall through with current selection on read failure
         } finally {
             terminal.setAttributes(originalAttributes);
         }
