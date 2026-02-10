@@ -89,7 +89,7 @@ public final class JdkResolver {
         String value = System.getenv("JAVA_HOME");
         if (value == null || value.isBlank()) return null;
         Path home = Path.of(value);
-        if (hasJavaBinary(home) && checkVersion(home.resolve("bin/java"))) {
+        if (hasJavaBinary(home) && checkVersion(home.resolve(javaBinaryName()))) {
             return home;
         }
         return null;
@@ -178,7 +178,11 @@ public final class JdkResolver {
 
     private static boolean hasJavaBinary(Path javaHome) {
         if (javaHome == null) return false;
-        return Files.isExecutable(javaHome.resolve("bin/java"));
+        return Files.isExecutable(javaHome.resolve(javaBinaryName()));
+    }
+
+    private static String javaBinaryName() {
+        return PlatformDetector.isWindows() ? "bin/java.exe" : "bin/java";
     }
 
     private static boolean checkVersion(Path javaBin) {
