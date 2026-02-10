@@ -176,8 +176,15 @@ public final class JdkResolver {
     }
 
     private static Path queryJavaHome(Path javaBin) {
+        // Java 25+ uses "properties", older versions use "property"
+        Path home = queryJavaHomeWith(javaBin, "-XshowSettings:properties");
+        if (home != null) return home;
+        return queryJavaHomeWith(javaBin, "-XshowSettings:property");
+    }
+
+    private static Path queryJavaHomeWith(Path javaBin, String showSettingsFlag) {
         try {
-            var pb = new ProcessBuilder(javaBin.toString(), "-XshowSettings:all", "-version");
+            var pb = new ProcessBuilder(javaBin.toString(), showSettingsFlag, "-version");
             pb.redirectErrorStream(true);
             Process process = pb.start();
             try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
@@ -187,8 +194,9 @@ public final class JdkResolver {
                     if (trimmed.startsWith("java.home")) {
                         int eq = trimmed.indexOf('=');
                         if (eq >= 0) {
-                            process.waitFor();
-                            return Path.of(trimmed.substring(eq + 1).trim());
+                            Path home = Path.of(trimmed.substring(eq + 1).trim());
+                            process.destroyForcibly();
+                            return home;
                         }
                     }
                 }
