@@ -292,12 +292,6 @@ public class BuildCommand implements Callable<Integer> {
             command.add("-H:CCompilerOption=arm64");
         }
 
-        // On Windows, statically link the Visual C++ runtime so the binary
-        // doesn't require vcruntime140.dll on the end user's machine.
-        if (PlatformDetector.isWindows()) {
-            command.add("-H:CCompilerOption=/MT");
-        }
-
         if (!libPathStr.isEmpty()) {
             command.add("-Djava.library.path=" + libPathStr);
         }
@@ -330,6 +324,12 @@ public class BuildCommand implements Callable<Integer> {
         // Copy native library next to the binary so it can be found at runtime
         copyNativeLibraryToBuildOutput();
 
+        // On Windows, copy VC runtime DLLs next to the binary so end users
+        // don't need the Visual C++ Redistributable installed
+        if (PlatformDetector.isWindows()) {
+            copyVCRuntimeDlls();
+        }
+
         System.out.println("[Krema Build] Native binary created: target/" + appName);
         return true;
     }
@@ -346,6 +346,77 @@ public class BuildCommand implements Callable<Integer> {
             }
         } else {
             System.err.println("[Krema Build] Warning: native library (libwebview) not found, binary may fail at runtime");
+        }
+    }
+
+    private void copyVCRuntimeDlls() {
+        Path targetDir = Path.of("target");
+        String[] dlls = {"vcruntime140.dll", "vcruntime140_1.dll"};
+
+        // Try VCToolsRedistDir (set by Visual Studio Developer environment)
+        String redistDir = System.getenv("VCToolsRedistDir");
+        if (redistDir != null) {
+            Path crtDir = findVCRedistCrtDir(Path.of(redistDir, "x64"));
+            if (crtDir != null) {
+                copyDlls(crtDir, targetDir, dlls);
+                return;
+            }
+        }
+
+        // Try to find via vswhere
+        try {
+            var pb = new ProcessBuilder(
+                Path.of(System.getenv("ProgramFiles(x86)"),
+                    "Microsoft Visual Studio", "Installer", "vswhere.exe").toString(),
+                "-latest", "-property", "installationPath");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            String vsPath = new String(process.getInputStream().readAllBytes()).trim();
+            if (process.waitFor() == 0 && !vsPath.isBlank()) {
+                // Search in VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT
+                Path redistBase = Path.of(vsPath, "VC", "Redist", "MSVC");
+                if (Files.isDirectory(redistBase)) {
+                    try (var versions = Files.list(redistBase)) {
+                        var latest = versions.filter(Files::isDirectory).max(Path::compareTo);
+                        if (latest.isPresent()) {
+                            Path crtDir = findVCRedistCrtDir(latest.get().resolve("x64"));
+                            if (crtDir != null) {
+                                copyDlls(crtDir, targetDir, dlls);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // Fallback: copy from System32
+        Path system32 = Path.of(System.getenv("SYSTEMROOT"), "System32");
+        copyDlls(system32, targetDir, dlls);
+    }
+
+    private Path findVCRedistCrtDir(Path x64Dir) {
+        if (!Files.isDirectory(x64Dir)) return null;
+        try (var dirs = Files.list(x64Dir)) {
+            return dirs.filter(p -> p.getFileName().toString().startsWith("Microsoft.VC"))
+                       .filter(p -> p.getFileName().toString().endsWith(".CRT"))
+                       .findFirst().orElse(null);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private void copyDlls(Path sourceDir, Path targetDir, String[] dlls) {
+        for (String dll : dlls) {
+            Path src = sourceDir.resolve(dll);
+            if (Files.exists(src)) {
+                try {
+                    Files.copy(src, targetDir.resolve(dll), StandardCopyOption.REPLACE_EXISTING);
+                    System.out.println("[Krema Build] Copied " + dll + " to target/");
+                } catch (IOException e) {
+                    System.err.println("[Krema Build] Warning: failed to copy " + dll + ": " + e.getMessage());
+                }
+            }
         }
     }
 

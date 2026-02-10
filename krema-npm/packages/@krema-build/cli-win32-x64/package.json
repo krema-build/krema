@@ -5,7 +5,7 @@
   "license": "BSL-1.1",
   "os": ["win32"],
   "cpu": ["x64"],
-  "files": ["bin/krema.exe"],
+  "files": ["bin/krema.exe", "bin/vcruntime140.dll", "bin/vcruntime140_1.dll"],
   "preferUnplugged": true,
   "publishConfig": {
     "access": "public"

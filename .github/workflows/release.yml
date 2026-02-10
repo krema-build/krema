@@ -91,9 +91,16 @@ jobs:
           -H:+UnlockExperimentalVMOptions
           -H:-CheckToolchain
           -Djava.awt.headless=true
-          -H:CCompilerOption=/MT
           -jar krema/krema-cli/target/krema-cli.jar
           -o krema-${{ matrix.platform }}
+
+      - name: Bundle VC runtime DLLs (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $redistDir = Get-ChildItem "$env:VCToolsRedistDir\x64\Microsoft.VC*.CRT" -Directory | Select-Object -Last 1
+          Copy-Item "$($redistDir.FullName)\vcruntime140.dll" .
+          Copy-Item "$($redistDir.FullName)\vcruntime140_1.dll" .
 
       - name: Upload native binary (Unix)
         if: runner.os != 'Windows'
@@ -107,7 +114,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: krema-native-${{ matrix.platform }}
-          path: krema-${{ matrix.platform }}.exe
+          path: |
+            krema-${{ matrix.platform }}.exe
+            vcruntime140.dll
+            vcruntime140_1.dll
 
   publish-release:
     needs: [build-jar, build-native]
@@ -189,10 +199,12 @@ jobs:
             cd "$GITHUB_WORKSPACE"
           done
 
-          # Windows
+          # Windows (include VC runtime DLLs alongside the binary)
           for win_platform in "win32-x64"; do
             PKG_DIR="krema-npm/packages/@krema-build/cli-${win_platform}"
             cp "artifacts/krema-native-${win_platform}/krema-${win_platform}.exe" "${PKG_DIR}/bin/krema.exe"
+            cp "artifacts/krema-native-${win_platform}/vcruntime140.dll" "${PKG_DIR}/bin/"
+            cp "artifacts/krema-native-${win_platform}/vcruntime140_1.dll" "${PKG_DIR}/bin/"
             cd "$PKG_DIR"
             npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
             cd "$GITHUB_WORKSPACE"
