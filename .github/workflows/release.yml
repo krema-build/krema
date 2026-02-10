@@ -131,6 +131,30 @@ jobs:
             artifacts/krema-native-linux-arm64/krema-linux-arm64
             artifacts/krema-native-win32-x64/krema-win32-x64.exe
 
+  publish-maven:
+    needs: [build-jar]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          server-id: central-krema
+          server-username: MAVEN_CENTRAL_USERNAME
+          server-password: MAVEN_CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Publish to Maven Central
+        run: mvn deploy -P release -DskipTests -pl krema/krema-core,krema/krema-processor -am
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
   publish-npm:
     needs: [build-jar, build-native]
     runs-on: ubuntu-latest
