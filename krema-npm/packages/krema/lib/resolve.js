@@ -53,9 +53,11 @@ async function findOrDownloadJar() {
  * Returns the path to the java binary, or null.
  */
 function findJava() {
+  const javaBin = process.platform === 'win32' ? 'java.exe' : 'java';
+
   // 1. KREMA_JAVA_HOME override
   if (process.env.KREMA_JAVA_HOME) {
-    const java = path.join(process.env.KREMA_JAVA_HOME, 'bin', 'java');
+    const java = path.join(process.env.KREMA_JAVA_HOME, 'bin', javaBin);
     if (fs.existsSync(java)) return java;
   }
 
@@ -66,7 +68,7 @@ function findJava() {
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
-      const java = path.join(jh, 'bin', 'java');
+      const java = path.join(jh, 'bin', javaBin);
       if (jh && fs.existsSync(java)) return java;
     } catch {
       // Not found
@@ -75,7 +77,7 @@ function findJava() {
 
   // 3. JAVA_HOME if version matches
   if (process.env.JAVA_HOME) {
-    const java = path.join(process.env.JAVA_HOME, 'bin', 'java');
+    const java = path.join(process.env.JAVA_HOME, 'bin', javaBin);
     if (fs.existsSync(java) && checkJavaVersion(java)) return java;
   }
 

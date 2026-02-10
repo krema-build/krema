@@ -61,6 +61,10 @@ public final class JdkResolver {
         found = fromTemurinInstall();
         if (found != null) return found;
 
+        // 6. Current JVM (we're already running on it)
+        found = fromCurrentJvm();
+        if (found != null) return found;
+
         return null;
     }
 
@@ -156,13 +160,51 @@ public final class JdkResolver {
                 if (process.waitFor() == 0 && line != null && !line.isBlank()) {
                     Path javaBin = Path.of(line.trim()).toRealPath();
                     if (checkVersion(javaBin)) {
-                        // bin/java -> bin -> JAVA_HOME
+                        // Try deriving JAVA_HOME from binary path: bin/java -> bin -> JAVA_HOME
                         Path home = javaBin.getParent().getParent();
                         if (hasJavaBinary(home)) return home;
+
+                        // Binary may be in a shim directory (e.g. Oracle's javapath on Windows).
+                        // Ask the binary itself for its java.home.
+                        home = queryJavaHome(javaBin);
+                        if (home != null && hasJavaBinary(home)) return home;
                     }
                 }
             }
         } catch (IOException | InterruptedException ignored) {}
+        return null;
+    }
+
+    private static Path queryJavaHome(Path javaBin) {
+        try {
+            var pb = new ProcessBuilder(javaBin.toString(), "-XshowSettings:property", "-version");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (trimmed.startsWith("java.home")) {
+                        int eq = trimmed.indexOf('=');
+                        if (eq >= 0) {
+                            process.waitFor();
+                            return Path.of(trimmed.substring(eq + 1).trim());
+                        }
+                    }
+                }
+            }
+            process.waitFor();
+        } catch (IOException | InterruptedException ignored) {}
+        return null;
+    }
+
+    private static Path fromCurrentJvm() {
+        String javaHome = System.getProperty("java.home");
+        if (javaHome == null || javaHome.isBlank()) return null;
+        Path home = Path.of(javaHome);
+        if (hasJavaBinary(home) && checkVersion(home.resolve(javaBinaryName()))) {
+            return home;
+        }
         return null;
     }
 

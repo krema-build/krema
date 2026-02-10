@@ -279,7 +279,8 @@ public class DevCommand implements Callable<Integer> {
 
         // Otherwise, launch Java directly (native features may not work on macOS)
         List<String> command = new ArrayList<>();
-        command.add(javaHome.resolve("bin/java").toString());
+        String javaBin = Platform.current() == Platform.WINDOWS ? "bin/java.exe" : "bin/java";
+        command.add(javaHome.resolve(javaBin).toString());
 
         // Platform-specific flags
         if (Platform.current() == Platform.MACOS) {

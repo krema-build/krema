@@ -182,7 +182,8 @@ public class BuildCommand implements Callable<Integer> {
         }
 
         java.util.List<String> command = new java.util.ArrayList<>();
-        command.add(javaHome.resolve("bin/javac").toString());
+        String javacBin = PlatformDetector.isWindows() ? "bin/javac.exe" : "bin/javac";
+        command.add(javaHome.resolve(javacBin).toString());
         command.add("--release");
         command.add("25");
         command.add("-d");
