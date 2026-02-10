@@ -177,7 +177,7 @@ public final class JdkResolver {
 
     private static Path queryJavaHome(Path javaBin) {
         try {
-            var pb = new ProcessBuilder(javaBin.toString(), "-XshowSettings:property", "-version");
+            var pb = new ProcessBuilder(javaBin.toString(), "-XshowSettings:all", "-version");
             pb.redirectErrorStream(true);
             Process process = pb.start();
             try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
