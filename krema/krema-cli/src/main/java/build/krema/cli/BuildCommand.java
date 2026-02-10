@@ -292,6 +292,12 @@ public class BuildCommand implements Callable<Integer> {
             command.add("-H:CCompilerOption=arm64");
         }
 
+        // On Windows, statically link the Visual C++ runtime so the binary
+        // doesn't require vcruntime140.dll on the end user's machine.
+        if (PlatformDetector.isWindows()) {
+            command.add("-H:CCompilerOption=/MT");
+        }
+
         if (!libPathStr.isEmpty()) {
             command.add("-Djava.library.path=" + libPathStr);
         }

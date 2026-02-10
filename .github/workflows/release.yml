@@ -91,6 +91,7 @@ jobs:
           -H:+UnlockExperimentalVMOptions
           -H:-CheckToolchain
           -Djava.awt.headless=true
+          -H:CCompilerOption=/MT
           -jar krema/krema-cli/target/krema-cli.jar
           -o krema-${{ matrix.platform }}
 
