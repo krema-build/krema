@@ -35,6 +35,18 @@ const config = {
       attributes: {},
       innerHTML: `(function(){try{if(localStorage.getItem('krema-theme')==='navy'){document.documentElement.setAttribute('data-krema-theme','navy')}}catch(e){}})()`,
     },
+    {
+      tagName: 'script',
+      attributes: {
+        async: true,
+        src: 'https://analytics.akalea.com/js/pa-SmnpwNcVBNvWqBzGtSTAj.js',
+      },
+    },
+    {
+      tagName: 'script',
+      attributes: {},
+      innerHTML: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
+    },
   ],
 
   onBrokenLinks: 'throw',
