@@ -117,7 +117,8 @@ public final class NativeLibraryLoader {
                 return null;
             }
 
-            Path tempDir = Files.createTempDirectory("krema-native-");
+            // Resolve to real path to avoid Windows 8.3 short names (e.g., JULIEN~1)
+            Path tempDir = Files.createTempDirectory("krema-native-").toRealPath();
             tempDir.toFile().deleteOnExit();
 
             Path libPath = tempDir.resolve(libraryFileName);
@@ -140,12 +141,16 @@ public final class NativeLibraryLoader {
      */
     private static void extractCompanionFiles(String resourceDir, String mainFileName, Path targetDir) {
         List<String> companions = listCompanionFiles(resourceDir, mainFileName);
+        System.out.println("[NativeLibraryLoader] Companion files found: " + companions);
+        System.out.flush();
         for (String fileName : companions) {
             try (var is = NativeLibraryLoader.class.getResourceAsStream(resourceDir + fileName)) {
                 if (is == null) continue;
                 Path target = targetDir.resolve(fileName);
                 Files.copy(is, target, StandardCopyOption.REPLACE_EXISTING);
                 target.toFile().deleteOnExit();
+                System.out.println("[NativeLibraryLoader] Extracted companion: " + target);
+                System.out.flush();
             } catch (IOException ignored) {}
         }
     }
