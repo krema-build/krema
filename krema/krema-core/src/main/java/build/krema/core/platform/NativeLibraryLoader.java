@@ -7,6 +7,8 @@ import java.lang.foreign.SymbolLookup;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -105,25 +107,59 @@ public final class NativeLibraryLoader {
 
     private static Path extractFromJar(String libraryName, Platform platform) {
         String arch = PlatformDetector.getArch();
-        String resourcePath = "/native/" + platform.name().toLowerCase() + "/" +
-                              arch + "/" + platform.formatLibraryName(libraryName);
+        String resourceDir = "/native/" + platform.name().toLowerCase() + "/" + arch + "/";
+        String libraryFileName = platform.formatLibraryName(libraryName);
 
-        try (InputStream is = NativeLibraryLoader.class.getResourceAsStream(resourcePath)) {
+        try (InputStream is = NativeLibraryLoader.class.getResourceAsStream(resourceDir + libraryFileName)) {
             if (is == null) {
                 return null;
             }
 
             Path tempDir = Files.createTempDirectory("krema-native-");
-            Path libPath = tempDir.resolve(platform.formatLibraryName(libraryName));
-            Files.copy(is, libPath, StandardCopyOption.REPLACE_EXISTING);
-
-            // Schedule cleanup on JVM exit
-            libPath.toFile().deleteOnExit();
             tempDir.toFile().deleteOnExit();
+
+            Path libPath = tempDir.resolve(libraryFileName);
+            Files.copy(is, libPath, StandardCopyOption.REPLACE_EXISTING);
+            libPath.toFile().deleteOnExit();
+
+            // Extract companion files (e.g., WebView2Loader.dll needed by webview.dll on Windows)
+            extractCompanionFiles(resourceDir, libraryFileName, tempDir);
 
             return libPath;
         } catch (IOException e) {
             return null;
+        }
+    }
+
+    /**
+     * Extracts companion native files from the same resource directory.
+     * This ensures dependency DLLs (like WebView2Loader.dll) are co-located
+     * with the main library so the OS loader can find them.
+     */
+    private static void extractCompanionFiles(String resourceDir, String mainFileName, Path targetDir) {
+        try {
+            List<String> fileNames = new ArrayList<>();
+            try (var dirStream = NativeLibraryLoader.class.getResourceAsStream(resourceDir)) {
+                if (dirStream != null) {
+                    for (String line : new String(dirStream.readAllBytes()).split("\\R")) {
+                        String name = line.trim();
+                        if (!name.isEmpty() && !name.equals(mainFileName)) {
+                            fileNames.add(name);
+                        }
+                    }
+                }
+            }
+
+            for (String fileName : fileNames) {
+                try (var fis = NativeLibraryLoader.class.getResourceAsStream(resourceDir + fileName)) {
+                    if (fis == null) continue;
+                    Path target = targetDir.resolve(fileName);
+                    Files.copy(fis, target, StandardCopyOption.REPLACE_EXISTING);
+                    target.toFile().deleteOnExit();
+                }
+            }
+        } catch (IOException ignored) {
+            // Best-effort: companion extraction failure is not fatal
         }
     }
 
