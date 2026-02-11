@@ -72,9 +72,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: webview-windows-x64
-          path: |
-            krema/krema-core/lib/webview.dll
-            krema/krema-core/lib/WebView2Loader.dll
+          path: krema/krema-core/lib/webview.dll
 
   build-windows-arm64:
     runs-on: windows-latest
@@ -138,6 +136,7 @@ jobs:
             "$CC" "$SRC_FILE" -shared \
               -DWEBVIEW_BUILD_SHARED -DWEBVIEW_MSEDGE \
               -std=c++17 \
+              -static-libgcc -static-libstdc++ \
               -I"$WEBVIEW_SRC/core/include" \
               -I"$WEBVIEW2_INCLUDE" \
               -lole32 -lcomctl32 -lshlwapi -lversion \
@@ -153,6 +152,7 @@ jobs:
               -I"$WEBVIEW_SRC" \
               -I"$WEBVIEW2_INCLUDE" \
               -std=c++17 \
+              -static-libgcc -static-libstdc++ \
               -lole32 -lcomctl32 -lshlwapi -lversion \
               -o "$OUTFILE"
           fi
@@ -161,19 +161,11 @@ jobs:
           mkdir -p "$PROJECT_DIR/krema-core/lib"
           cp "$OUTFILE" "$PROJECT_DIR/krema-core/lib/webview.dll"
 
-          # Copy ARM64 WebView2Loader.dll
-          LOADER_DLL="$WEBVIEW2_DIR/build/native/arm64/WebView2Loader.dll"
-          if [ -f "$LOADER_DLL" ]; then
-            cp "$LOADER_DLL" "$PROJECT_DIR/krema-core/lib/WebView2Loader.dll"
-          fi
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: webview-windows-arm64
-          path: |
-            krema/krema-core/lib/webview.dll
-            krema/krema-core/lib/WebView2Loader.dll
+          path: krema/krema-core/lib/webview.dll
 
   build-macos-arm64:
     runs-on: macos-latest
@@ -267,9 +259,7 @@ jobs:
           cp artifacts/libwebview-linux-x64/libwebview.so        krema/krema-core/lib/linux/x86_64/
           cp artifacts/libwebview-linux-arm64/libwebview.so      krema/krema-core/lib/linux/aarch64/
           cp artifacts/webview-windows-x64/webview.dll           krema/krema-core/lib/windows/x86_64/
-          cp artifacts/webview-windows-x64/WebView2Loader.dll    krema/krema-core/lib/windows/x86_64/
           cp artifacts/webview-windows-arm64/webview.dll          krema/krema-core/lib/windows/aarch64/
-          cp artifacts/webview-windows-arm64/WebView2Loader.dll   krema/krema-core/lib/windows/aarch64/
 
       - name: Commit and push
         run: |

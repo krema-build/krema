@@ -142,6 +142,7 @@ if command -v g++ &>/dev/null; then
         g++ "$SRC_FILE" -shared \
             -DWEBVIEW_BUILD_SHARED -DWEBVIEW_MSEDGE \
             -std=c++17 \
+            -static-libgcc -static-libstdc++ \
             -I"$WEBVIEW_SRC/core/include" \
             -I"$WEBVIEW2_INCLUDE" \
             -L"$WEBVIEW2_LIB" \
@@ -160,6 +161,7 @@ WRAPPER_EOF
             -I"$WEBVIEW2_INCLUDE" \
             -L"$WEBVIEW2_LIB" \
             -std=c++17 \
+            -static-libgcc -static-libstdc++ \
             -lole32 -lcomctl32 -lshlwapi -lversion \
             -o "$OUTFILE"
     fi
@@ -179,13 +181,6 @@ echo "  Built: $OUTFILE"
 mkdir -p "$OUTPUT_DIR"
 cp "$OUTFILE" "$OUTPUT_DIR/webview.dll"
 echo "  Installed to: $OUTPUT_DIR/webview.dll"
-
-# Copy WebView2Loader.dll (required at runtime)
-LOADER_DLL="$WEBVIEW2_DIR/build/native/x64/WebView2Loader.dll"
-if [ -f "$LOADER_DLL" ]; then
-    cp "$LOADER_DLL" "$OUTPUT_DIR/WebView2Loader.dll"
-    echo "  Installed WebView2Loader.dll to: $OUTPUT_DIR/"
-fi
 
 echo ""
 echo "Done! webview.dll is ready at: $OUTPUT_DIR/webview.dll"
