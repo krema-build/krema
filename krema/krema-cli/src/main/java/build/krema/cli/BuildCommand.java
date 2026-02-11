@@ -105,13 +105,13 @@ public class BuildCommand implements Callable<Integer> {
 
         // Detect package manager
         if (Files.exists(Path.of("pnpm-lock.yaml"))) {
-            pb.command("pnpm", "run", "build");
+            pb.command(ShellCommand.of("pnpm", "run", "build"));
         } else if (Files.exists(Path.of("yarn.lock"))) {
-            pb.command("yarn", "build");
+            pb.command(ShellCommand.of("yarn", "build"));
         } else if (Files.exists(Path.of("bun.lockb"))) {
-            pb.command("bun", "run", "build");
+            pb.command(ShellCommand.of("bun", "run", "build"));
         } else {
-            pb.command("npm", "run", "build");
+            pb.command(ShellCommand.of("npm", "run", "build"));
         }
 
         pb.inheritIO();
@@ -148,7 +148,7 @@ public class BuildCommand implements Callable<Integer> {
     private boolean buildWithMaven() throws IOException, InterruptedException {
         System.out.println("[Krema Build] Building with Maven...");
 
-        ProcessBuilder pb = new ProcessBuilder(MavenResolver.command(), "package", "-q", "-DskipTests");
+        ProcessBuilder pb = new ProcessBuilder(ShellCommand.of("mvn", "package", "-q", "-DskipTests"));
         pb.environment().put("JAVA_HOME", javaHome.toString());
         pb.inheritIO();
         Process process = pb.start();
@@ -459,11 +459,11 @@ public class BuildCommand implements Callable<Integer> {
     private String resolveMavenClasspath() throws IOException, InterruptedException {
         Path cpFile = Files.createTempFile("krema-cp", ".txt");
         try {
-            ProcessBuilder pb = new ProcessBuilder(
-                MavenResolver.command(), "dependency:build-classpath",
+            ProcessBuilder pb = new ProcessBuilder(ShellCommand.of(
+                "mvn", "dependency:build-classpath",
                 "-Dmdep.outputFile=" + cpFile.toAbsolutePath(),
                 "-q"
-            );
+            ));
             pb.environment().put("JAVA_HOME", javaHome.toString());
             pb.inheritIO();
             Process process = pb.start();

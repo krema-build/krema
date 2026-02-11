@@ -409,7 +409,7 @@ public class DevCommand implements Callable<Integer> {
     }
 
     private boolean runMavenCompile() throws IOException, InterruptedException {
-        ProcessBuilder pb = new ProcessBuilder(MavenResolver.command(), "compile", "-q");
+        ProcessBuilder pb = new ProcessBuilder(ShellCommand.of("mvn", "compile", "-q"));
         pb.environment().put("JAVA_HOME", javaHome.toString());
         pb.inheritIO();
         Process process = pb.start();
@@ -448,10 +448,10 @@ public class DevCommand implements Callable<Integer> {
         // Use Maven to get the classpath - write to temp file to avoid mixing with warnings
         Path tempFile = Files.createTempFile("krema-classpath", ".txt");
         try {
-            ProcessBuilder pb = new ProcessBuilder(
-                MavenResolver.command(), "dependency:build-classpath",
+            ProcessBuilder pb = new ProcessBuilder(ShellCommand.of(
+                "mvn", "dependency:build-classpath",
                 "-Dmdep.outputFile=" + tempFile.toAbsolutePath(), "-q"
-            );
+            ));
             pb.environment().put("JAVA_HOME", javaHome.toString());
             pb.inheritIO();
             Process process = pb.start();
@@ -491,7 +491,7 @@ public class DevCommand implements Callable<Integer> {
             }
         }
         parts[0] = packageManager;
-        pb.command(parts);
+        pb.command(ShellCommand.of(parts));
         pb.inheritIO();
         pb.redirectErrorStream(true);
 

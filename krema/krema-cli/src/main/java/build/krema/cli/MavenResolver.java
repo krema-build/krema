@@ -5,19 +5,11 @@ import build.krema.core.platform.PlatformDetector;
 import java.io.IOException;
 
 /**
- * Resolves the Maven command for the current platform.
- * On Windows, Maven ships as {@code mvn.cmd}; on Unix as {@code mvn}.
+ * Checks that Maven is available on the system.
  */
 public final class MavenResolver {
 
     private MavenResolver() {}
-
-    /**
-     * Returns the Maven command name for the current platform.
-     */
-    public static String command() {
-        return PlatformDetector.isWindows() ? "mvn.cmd" : "mvn";
-    }
 
     /**
      * Checks that Maven is available on PATH.
@@ -26,10 +18,9 @@ public final class MavenResolver {
     public static boolean checkAvailable() {
         String whichCmd = PlatformDetector.isWindows() ? "where" : "which";
         try {
-            var pb = new ProcessBuilder(whichCmd, command());
+            var pb = new ProcessBuilder(whichCmd, "mvn");
             pb.redirectErrorStream(true);
             Process process = pb.start();
-            // Drain output to prevent blocking
             process.getInputStream().readAllBytes();
             int exitCode = process.waitFor();
             if (exitCode == 0) {
@@ -38,8 +29,10 @@ public final class MavenResolver {
         } catch (IOException | InterruptedException ignored) {}
 
         System.err.println("[Krema] Maven is required but was not found on PATH.");
-        System.err.println("[Krema] Install Maven from: https://maven.apache.org/download.cgi");
-        System.err.println("[Krema] and ensure 'mvn' is available in your terminal.");
+        System.err.println("[Krema] Install it with:");
+        System.err.println("[Krema]   Windows:  choco install maven  (or scoop install maven)");
+        System.err.println("[Krema]   macOS:    brew install maven");
+        System.err.println("[Krema]   Linux:    sudo apt install maven  (or your package manager)");
         return false;
     }
 }
