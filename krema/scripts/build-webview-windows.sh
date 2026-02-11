@@ -142,7 +142,7 @@ if command -v g++ &>/dev/null; then
         g++ "$SRC_FILE" -shared \
             -DWEBVIEW_BUILD_SHARED -DWEBVIEW_MSEDGE \
             -std=c++17 \
-            -static-libgcc -static-libstdc++ \
+            -static-libgcc -static-libstdc++ -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic \
             -I"$WEBVIEW_SRC/core/include" \
             -I"$WEBVIEW2_INCLUDE" \
             -L"$WEBVIEW2_LIB" \
@@ -161,7 +161,7 @@ WRAPPER_EOF
             -I"$WEBVIEW2_INCLUDE" \
             -L"$WEBVIEW2_LIB" \
             -std=c++17 \
-            -static-libgcc -static-libstdc++ \
+            -static-libgcc -static-libstdc++ -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic \
             -lole32 -lcomctl32 -lshlwapi -lversion \
             -o "$OUTFILE"
     fi
