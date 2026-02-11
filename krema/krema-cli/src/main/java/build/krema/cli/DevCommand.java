@@ -9,9 +9,7 @@ import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -499,27 +497,26 @@ public class DevCommand implements Callable<Integer> {
     }
 
     private boolean isServerRunning(String url) {
-        // Angular/Vite dev servers on macOS often bind to ::1 (IPv6 only).
-        // Java's HttpURLConnection tries 127.0.0.1 first and doesn't fall back,
-        // so we explicitly try all variants.
-        if (tryConnect(url)) return true;
-        if (url.contains("localhost")) {
-            if (tryConnect(url.replace("localhost", "[::1]"))) return true;
-            if (tryConnect(url.replace("localhost", "127.0.0.1"))) return true;
+        int port;
+        try {
+            port = new URI(url).getPort();
+            if (port == -1) port = 80;
+        } catch (Exception e) {
+            return false;
         }
-        return false;
+
+        // Dev servers may bind to IPv4 only, IPv6 only, or both.
+        // macOS: Angular/Vite often bind to ::1 (IPv6) only.
+        // Windows: typically 127.0.0.1 (IPv4) only.
+        // Try both — a TCP connect is fast and avoids HTTP-level quirks
+        // (redirects, status codes, warmup responses) that cause false negatives.
+        return isPortOpen("127.0.0.1", port) || isPortOpen("::1", port);
     }
 
-    private boolean tryConnect(String url) {
-        try {
-            HttpURLConnection conn = (HttpURLConnection) new URI(url).toURL().openConnection();
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
-            conn.setRequestMethod("GET");
-            conn.setInstanceFollowRedirects(true);
-            int responseCode = conn.getResponseCode();
-            conn.disconnect();
-            return responseCode >= 200 && responseCode < 400;
+    private boolean isPortOpen(String host, int port) {
+        try (var socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress(host, port), 500);
+            return true;
         } catch (Exception e) {
             return false;
         }
