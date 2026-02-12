@@ -6,7 +6,7 @@
 
     <groupId>build.krema</groupId>
     <artifactId>krema-parent</artifactId>
-    <version>0.2.8</version>
+    <version>0.2.9</version>
     <packaging>pom</packaging>
 
     <name>Krema Parent</name>
