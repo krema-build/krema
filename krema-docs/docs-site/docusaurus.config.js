@@ -130,11 +130,15 @@ const config = {
             ],
           },
           {
-            title: 'More',
+            title: 'Community',
             items: [
               {
                 label: 'GitHub',
                 href: 'https://github.com/krema-build/krema',
+              },
+              {
+                label: 'Contact',
+                href: 'mailto:contact@krema.build',
               },
             ],
           },
