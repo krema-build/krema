@@ -15,7 +15,7 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <krema.version>0.2.0</krema.version>
+        <krema.version>0.3.0</krema.version>
     </properties>
 
     <dependencies>
@@ -64,6 +64,13 @@
                 <configuration>
                     <release>25</release>
                     <parameters>true</parameters>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>build.krema</groupId>
+                            <artifactId>krema-processor</artifactId>
+                            <version>${krema.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
 

@@ -20,7 +20,8 @@ This runs the full production build pipeline:
 
 1. **Frontend build** — runs your frontend build command (e.g., `npm run build`)
 2. **Java compilation** — compiles your Java backend (via Maven if `pom.xml` exists, otherwise `javac`)
-3. **Asset packaging** — copies the frontend build output into the Java classpath resources
+3. **Type generation** — the annotation processor generates `krema-commands.d.ts` with TypeScript types for your `@KremaCommand` methods
+4. **Asset packaging** — copies the frontend build output into the Java classpath resources
 
 The output is placed in the `target/` directory.
 
@@ -87,6 +88,33 @@ krema build --env production
 ```
 
 Environment variables from `.env` files are also loaded automatically (`.env`, `.env.production`, etc.).
+
+### TypeScript Type Generation
+
+During Java compilation, the Krema annotation processor automatically generates a `krema-commands.d.ts` file containing TypeScript type definitions for all your `@KremaCommand` methods. By default, this file is written to `target/classes/`.
+
+To write it directly into your frontend source tree for seamless IDE integration:
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <annotationProcessorPaths>
+            <path>
+                <groupId>build.krema</groupId>
+                <artifactId>krema-processor</artifactId>
+                <version>${krema.version}</version>
+            </path>
+        </annotationProcessorPaths>
+        <compilerArgs>
+            <arg>-Akrema.ts.outDir=${project.basedir}/src</arg>
+        </compilerArgs>
+    </configuration>
+</plugin>
+```
+
+See [TypeScript Support](/docs/api/javascript-api#generated-command-types) for details on the generated types.
 
 ## Bundling
 

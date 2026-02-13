@@ -79,6 +79,10 @@ function App() {
 export default App;
 ```
 
+:::tip Type-Safe Commands
+Krema automatically generates TypeScript definitions for your `@KremaCommand` methods at compile time. The `greet` call above gets full autocompletion — command name, argument types, and return type are all inferred from your Java code. See [TypeScript Support](/docs/api/javascript-api#generated-command-types) for details.
+:::
+
 ## Build for Production
 
 When ready to distribute your app:

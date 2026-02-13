@@ -7,7 +7,7 @@
     <parent>
         <groupId>build.krema</groupId>
         <artifactId>krema-parent</artifactId>
-        <version>0.2.9</version>
+		<version>0.3.0</version>
     </parent>
 
     <artifactId>krema-processor</artifactId>
@@ -25,6 +25,20 @@
 
     <!-- No dependencies on krema-core or any other Krema module -->
 
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -36,6 +50,10 @@
                     <!-- Disable annotation processing for the processor itself -->
                     <proc>none</proc>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

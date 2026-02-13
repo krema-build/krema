@@ -6,7 +6,7 @@
 
     <groupId>build.krema</groupId>
     <artifactId>krema-benchmark</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <packaging>jar</packaging>
 
     <name>Krema Benchmark</name>
@@ -15,7 +15,7 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <krema.version>0.2.0</krema.version>
+        <krema.version>0.3.0</krema.version>
     </properties>
 
     <dependencies>

@@ -1,0 +1,4 @@
+build.krema.core.plugin.builtin.FsPlugin
+build.krema.core.plugin.builtin.LogPlugin
+build.krema.core.plugin.builtin.DeepLinkPlugin
+build.krema.core.plugin.builtin.UpdaterPlugin

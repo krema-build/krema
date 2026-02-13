@@ -354,19 +354,15 @@ public final class MacOSDialogEngine implements DialogEngine {
     private MemorySegment msgSend(MemorySegment target, MemorySegment selector, MemorySegment arg) throws Throwable {
         MethodHandle mh = LINKER.downcallHandle(
             OBJC_LOOKUP.find("objc_msgSend").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
-            Linker.Option.firstVariadicArg(2)
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
         );
         return (MemorySegment) mh.invokeExact(target, selector, arg);
     }
 
     private void msgSend(MemorySegment target, MemorySegment selector, boolean arg) throws Throwable {
-        // Boolean must be passed as int for variadic calls (C promotes bool to int)
-        // Use void return since we don't need the result from setter methods
         MethodHandle mh = LINKER.downcallHandle(
             OBJC_LOOKUP.find("objc_msgSend").orElseThrow(),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
-            Linker.Option.firstVariadicArg(2)
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
         );
         mh.invokeExact(target, selector, arg ? 1 : 0);
     }
@@ -374,8 +370,7 @@ public final class MacOSDialogEngine implements DialogEngine {
     private MemorySegment msgSend(MemorySegment target, MemorySegment selector, long arg) throws Throwable {
         MethodHandle mh = LINKER.downcallHandle(
             OBJC_LOOKUP.find("objc_msgSend").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
-            Linker.Option.firstVariadicArg(2)
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG)
         );
         return (MemorySegment) mh.invokeExact(target, selector, arg);
     }
@@ -389,8 +384,7 @@ public final class MacOSDialogEngine implements DialogEngine {
                 ValueLayout.ADDRESS,
                 ValueLayout.JAVA_DOUBLE, ValueLayout.JAVA_DOUBLE,
                 ValueLayout.JAVA_DOUBLE, ValueLayout.JAVA_DOUBLE
-            ),
-            Linker.Option.firstVariadicArg(2)
+            )
         );
         return (MemorySegment) mh.invokeExact(
             target, selector,

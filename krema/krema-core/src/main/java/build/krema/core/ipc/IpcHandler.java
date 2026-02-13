@@ -189,7 +189,7 @@ public class IpcHandler {
                               String json = MAPPER.writeValueAsString(r);
                               evalReply(seq, 0, json);
                           } catch (Throwable t) {
-                              evalReply(seq, 1, "{\"error\":\"" + t.getMessage() + "\"}");
+                              evalReply(seq, 1, "{\"message\":\"" + t.getMessage() + "\"}");
                           }
                       })
                       .exceptionally(e -> {
@@ -197,7 +197,7 @@ public class IpcHandler {
                           while (cause.getCause() != null) {
                               cause = cause.getCause();
                           }
-                          evalReply(seq, 1, "{\"error\":\"" + cause.getMessage() + "\"}");
+                          evalReply(seq, 1, "{\"message\":\"" + cause.getMessage() + "\"}");
                           return null;
                       });
             } else {
@@ -253,10 +253,10 @@ public class IpcHandler {
     private void returnError(String seq, String message) {
         try {
             ObjectNode error = MAPPER.createObjectNode();
-            error.put("error", message);
+            error.put("message", message);
             window.returnResult(seq, false, MAPPER.writeValueAsString(error));
         } catch (JsonProcessingException e) {
-            window.returnResult(seq, false, "{\"error\":\"Failed to serialize error\"}");
+            window.returnResult(seq, false, "{\"message\":\"Failed to serialize error\"}");
         }
     }
 

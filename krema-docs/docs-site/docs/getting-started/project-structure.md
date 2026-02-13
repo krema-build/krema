@@ -130,6 +130,11 @@ After running `krema build`:
 - Compiled frontend assets
 - Compiled Java classes
 - Bundled JAR file
+- `krema-commands.d.ts` — auto-generated TypeScript definitions for your `@KremaCommand` methods
+
+:::tip
+Copy `krema-commands.d.ts` into your `src/` directory (or set `-Akrema.ts.outDir` to write it there automatically) to get full autocompletion and type checking for `krema.invoke()` calls. See [TypeScript Support](/docs/api/javascript-api#generated-command-types).
+:::
 
 After running `krema bundle`:
 - Platform-specific bundle (.app, .exe, .AppImage)

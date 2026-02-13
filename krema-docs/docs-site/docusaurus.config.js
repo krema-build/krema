@@ -130,7 +130,7 @@ const config = {
             ],
           },
           {
-            title: 'Community',
+            title: 'More',
             items: [
               {
                 label: 'GitHub',

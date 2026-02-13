@@ -20,7 +20,6 @@ const sidebars = {
       type: 'category',
       label: 'Guides',
       items: [
-        'guides/native-apis',
         'guides/error-handling',
         'guides/plugins',
         'guides/building',
