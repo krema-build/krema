@@ -44,14 +44,6 @@ const unsubscribe = window.krema.on('file-changed', (data) => {
 unsubscribe();
 ```
 
-### once
-
-Register a one-time event listener.
-
-```typescript
-function once<T = unknown>(event: string, callback: (data: T) => void): () => void;
-```
-
 ## Built-in Events
 
 ### app:error
@@ -401,11 +393,19 @@ function downloadsDir(): Promise<string>;
 Get all displays.
 
 ```typescript
+interface ScreenBounds {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 interface ScreenInfo {
-    id: string;
-    bounds: { x: number; y: number; width: number; height: number };
-    workArea: { x: number; y: number; width: number; height: number };
+    name: string;
+    frame: ScreenBounds;           // Full screen bounds
+    visibleFrame: ScreenBounds;    // Excluding taskbars/menubar
     scaleFactor: number;
+    refreshRate: number;
     isPrimary: boolean;
 }
 
@@ -621,25 +621,19 @@ By default, the generated file is written to `target/classes/krema-commands.d.ts
 
 ### Base Type Definitions
 
-For Krema's built-in APIs (dialogs, clipboard, shell, etc.), install the type definitions package:
+Krema's built-in API types (dialogs, clipboard, shell, etc.) are provided via `krema-types.d.ts`, bundled as a resource in the `krema-core` JAR. After building your Java backend, the file is available at `target/classes/krema-types.d.ts`. Copy it into your frontend source directory (e.g. `src/`) so TypeScript picks it up:
 
 ```bash
-npm install @krema-build/api
+cp target/classes/krema-types.d.ts src/
 ```
 
-Usage:
+With the type definitions in place, the `window.krema` API is fully typed — no imports needed:
 
 ```typescript
-import { invoke, on } from '@krema-build/api';
+// Types are available globally via window.krema
+const file = await window.krema.invoke('dialog:openFile', { title: 'Pick a file' });
 
-interface User {
-    id: string;
-    name: string;
-}
-
-const user = await invoke<User>('getUser', { id: '123' });
-
-on('user-updated', (user: User) => {
+window.krema.on('user-updated', (user: { id: string; name: string }) => {
     console.log('User updated:', user.name);
 });
 ```

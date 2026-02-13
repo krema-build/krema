@@ -17,7 +17,7 @@ Technical overview of Krema's internal architecture.
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │  │   Frontend      │  │    IPC Layer    │  │    Backend      │ │
 │  │   (WebView)     │◄─┤                 ├─►│    (Java)       │ │
-│  │                 │  │  JSON-RPC       │  │                 │ │
+│  │                 │  │  Custom IPC     │  │                 │ │
 │  │  HTML/CSS/JS    │  │  over FFM       │  │  Commands       │ │
 │  │  React/Vue/etc  │  │                 │  │  Plugins        │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
@@ -33,51 +33,118 @@ Technical overview of Krema's internal architecture.
 ## Package Structure
 
 ```
-build.krema/
-├── core/                      # Core framework
-│   ├── Krema.java             # Main entry point, builder API
-│   ├── KremaWindow.java       # High-level window abstraction
-│   └── KremaConfig.java       # Configuration model
+build.krema.core/
+├── Krema.java                 # Main entry point, builder API
+├── KremaWindow.java           # High-level window abstraction
+├── KremaCommand.java          # @KremaCommand annotation
+├── CommandRegistry.java       # Routes IPC requests to handlers
+├── CommandRegistrar.java      # Generated registrar interface
+├── CommandInvoker.java        # Functional interface for dispatch
+├── AssetServer.java           # Serves frontend assets (SPA-aware)
+├── main/                      # Application bootstrap
+│   ├── KremaApplication.java
+│   ├── KremaBuilder.java
+│   └── KremaContext.java
 ├── platform/                  # Platform abstraction
-│   ├── Platform.java          # Platform enum
+│   ├── Platform.java          # Platform enum (MACOS, WINDOWS, LINUX)
 │   ├── PlatformDetector.java  # OS detection
-│   └── NativeLibraryLoader.java
+│   ├── NativeLibraryLoader.java
+│   ├── linux/GtkBindings.java
+│   └── windows/Win32Bindings.java
 ├── webview/                   # WebView engine abstraction
-│   ├── WebViewEngine.java     # Interface
+│   ├── WebViewEngine.java     # Interface (extends AutoCloseable)
+│   ├── WebViewCLibEngine.java # Shared FFM base implementation
 │   ├── WebViewEngineFactory.java
 │   ├── macos/MacOSWebViewEngine.java
 │   ├── windows/WindowsWebViewEngine.java
 │   └── linux/LinuxWebViewEngine.java
 ├── window/                    # Window management
-│   ├── WindowOptions.java     # Window configuration
+│   ├── WindowEngine.java      # Port interface
+│   ├── WindowEngineFactory.java
 │   ├── WindowManager.java     # Multi-window support
-│   └── WindowState.java
+│   ├── WindowOptions.java     # Window configuration
+│   ├── WindowState.java
+│   ├── macos/MacOSWindowEngine.java
+│   ├── windows/WindowsWindowEngine.java
+│   └── linux/LinuxWindowEngine.java
 ├── ipc/                       # Inter-process communication
-│   ├── IpcHandler.java        # Message handling
-│   ├── IpcRequest.java        # Request model
-│   └── IpcResponse.java       # Response model
-├── command/                   # Command system
-│   ├── KremaCommand.java      # Annotation
-│   ├── CommandRegistry.java   # Registry
-│   └── RequiresPermission.java
+│   └── IpcHandler.java        # Message handling + bridge injection
 ├── event/                     # Event system
 │   ├── KremaEvent.java        # Event interface
-│   ├── EventEmitter.java      # Emitter
-│   └── EventListener.java     # Listener
-├── api/                       # Native APIs
+│   └── EventEmitter.java      # Emitter
+├── api/                       # High-level API facades
 │   ├── dialog/                # File dialogs
 │   ├── clipboard/             # Clipboard
 │   ├── notification/          # Notifications
 │   ├── tray/                  # System tray
 │   ├── shell/                 # Shell commands
-│   └── path/                  # Path utilities
+│   ├── path/                  # Path utilities
+│   ├── screen/                # Screen information
+│   ├── window/                # Window API
+│   ├── menu/                  # Menus
+│   ├── shortcut/              # Global shortcuts
+│   ├── store/                 # Key-value store
+│   ├── securestorage/         # OS keychain storage
+│   ├── dock/                  # macOS dock
+│   ├── dragdrop/              # Drag and drop
+│   ├── http/                  # HTTP client
+│   ├── os/                    # OS information
+│   ├── app/                   # App environment
+│   └── instance/              # Single instance
+├── ports/                     # Port interfaces (hexagonal arch)
+│   ├── DialogPort.java
+│   ├── ScreenPort.java
+│   ├── WindowPort.java
+│   ├── MenuPort.java
+│   ├── NotificationPort.java
+│   ├── DockPort.java
+│   └── GlobalShortcutPort.java
+├── adapters/                  # Adapter implementations
+│   └── factory/AdapterFactory.java
 ├── plugin/                    # Plugin system
 │   ├── KremaPlugin.java       # Interface
 │   ├── PluginContext.java
-│   └── PluginLoader.java
-└── security/                  # Security
-    ├── Permission.java        # Enum
-    └── PermissionChecker.java
+│   ├── PluginLoader.java
+│   ├── PluginManifest.java
+│   ├── PluginException.java
+│   └── builtin/               # Built-in plugins
+│       ├── DeepLinkPlugin.java
+│       ├── FsPlugin.java
+│       ├── LogPlugin.java
+│       └── UpdaterPlugin.java
+├── security/                  # Security
+│   ├── Permission.java        # Enum
+│   ├── RequiresPermission.java # Annotation
+│   ├── PermissionChecker.java
+│   └── ContentSecurityPolicy.java
+├── error/                     # Error handling
+│   ├── ErrorHandler.java
+│   ├── ErrorInfo.java
+│   └── ErrorContext.java
+├── util/                      # Utilities
+│   ├── Logger.java
+│   ├── LogEntry.java
+│   ├── LogContext.java
+│   └── JsonFileLogWriter.java
+├── screen/                    # Screen engine implementations
+│   ├── ScreenEngine.java
+│   ├── ScreenEngineFactory.java
+│   ├── ScreenInfo.java
+│   ├── ScreenBounds.java
+│   └── CursorPosition.java
+├── dialog/                    # Dialog engine implementations
+├── menu/                      # Menu engine implementations
+├── notification/              # Notification engine implementations
+├── shortcut/                  # Global shortcut engine implementations
+├── dock/                      # Dock engine implementations
+├── updater/                   # Auto-update system
+├── splash/                    # Splash screen
+├── dev/                       # Development tools
+│   ├── DevServer.java
+│   ├── FileWatcher.java
+│   └── ErrorOverlay.java
+└── native_/                   # Native bindings
+    └── WebViewBindings.java
 ```
 
 ## Core Components
@@ -88,17 +155,26 @@ Krema detects the OS and loads platform-specific implementations:
 
 ```java
 public enum Platform {
-    MACOS, WINDOWS, LINUX, UNKNOWN
+    MACOS("macOS", "dylib", "lib%s.dylib"),
+    WINDOWS("Windows", "dll", "%s.dll"),
+    LINUX("Linux", "so", "lib%s.so"),
+    UNKNOWN("Unknown", null, null);
+
+    // Each variant carries display name, library extension, and library name pattern
+    public String getDisplayName() { ... }
+    public String getLibraryExtension() { ... }
+    public String formatLibraryName(String baseName) { ... }
+
+    /** Delegates to PlatformDetector.detect(). */
+    public static Platform current() { ... }
 }
 
-public class PlatformDetector {
-    public static Platform current() {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("mac")) return Platform.MACOS;
-        if (os.contains("win")) return Platform.WINDOWS;
-        if (os.contains("nux")) return Platform.LINUX;
-        return Platform.UNKNOWN;
-    }
+public final class PlatformDetector {
+    public static Platform detect() { ... }
+    public static String getArch() { ... }    // "aarch64", "x86_64", "x86"
+    public static boolean isMacOS() { ... }
+    public static boolean isWindows() { ... }
+    public static boolean isLinux() { ... }
 }
 ```
 
@@ -107,29 +183,38 @@ public class PlatformDetector {
 The `WebViewEngine` interface abstracts platform-specific WebView implementations:
 
 ```java
-public interface WebViewEngine {
-    void create(boolean debug);
-    void destroy();
+public interface WebViewEngine extends AutoCloseable {
     void setTitle(String title);
     void setSize(int width, int height, SizeHint hint);
     void navigate(String url);
     void setHtml(String html);
-    void init(String js);
-    void eval(String js);
+    void init(String js);              // Inject JS executed on every page load
+    void eval(String js);              // Execute JS in the current context
     void bind(String name, BindCallback callback);
-    void run();
+    void returnResult(String seq, boolean success, String result);
+    void run();                        // Blocks until window closed
     void terminate();
+    boolean isRunning();
+    void close();
+
+    @FunctionalInterface
+    interface BindCallback {
+        void invoke(String seq, String request);
+    }
+
+    enum SizeHint { NONE, MIN, MAX, FIXED }
 }
 ```
 
-Platform implementations:
-- **macOS**: WKWebView via Objective-C FFM
-- **Windows**: WebView2 via C++ FFM
-- **Linux**: WebKitGTK via C FFM
+`WebViewCLibEngine` is the shared abstract base class that implements `WebViewEngine` using the Foreign Function & Memory (FFM) API to call the native webview C library. Platform subclasses extend it:
+
+- **`MacOSWebViewEngine`** — Cocoa + WKWebView
+- **`WindowsWebViewEngine`** — Win32 + WebView2
+- **`LinuxWebViewEngine`** — GTK + WebKitGTK
 
 ### IPC (Inter-Process Communication)
 
-Frontend-to-backend communication uses JSON-RPC over FFM bindings:
+Frontend-to-backend communication uses a custom IPC protocol over FFM bindings:
 
 ```
 Frontend                    Backend
@@ -145,19 +230,14 @@ Frontend                    Backend
 **Request format:**
 ```json
 {
-  "id": "uuid",
-  "command": "greet",
+  "cmd": "greet",
   "args": {"name": "World"}
 }
 ```
 
-**Response format:**
-```json
-{
-  "id": "uuid",
-  "result": "Hello, World!"
-}
-```
+The sequence ID (`seq`) is managed by the native webview C library's `bind` mechanism, not included in the JSON payload. When a bound JS function is called, the C library passes a `seq` identifier and the serialized arguments to the Java callback.
+
+**Response:** The backend calls `webviewEngine.returnResult(seq, success, json)` to resolve or reject the frontend Promise. There is no JSON response envelope — the result value is passed directly.
 
 ### Command System
 
@@ -199,10 +279,16 @@ Plugins implement the `KremaPlugin` interface:
 
 ```java
 public interface KremaPlugin {
+    String getId();
     String getName();
     String getVersion();
-    void initialize(PluginContext context);
-    void shutdown();
+    default String getDescription() { return ""; }
+    default void initialize(PluginContext context) {}
+    default void shutdown() {}
+    default List<Object> getCommandHandlers() { return List.of(); }
+    default List<String> getRequiredPermissions() { return List.of(); }
+    default void onWindowCreated(String windowLabel) {}
+    default void onWindowClosed(String windowLabel) {}
 }
 ```
 
@@ -231,11 +317,11 @@ MemorySegment webview = (MemorySegment) createWindow.invokeExact(debug ? 1 : 0);
 
 ### Platform-Specific Bindings
 
-Each platform has dedicated binding classes:
+All platforms share the `WebViewCLibEngine` base class which uses the FFM API to call the native webview C library. Platform-specific extensions and additional native bindings:
 
-- **macOS**: `CocoaBindings`, `WebKitBindings`
-- **Windows**: `Win32Bindings`, `WebView2Bindings`
-- **Linux**: `GtkBindings`, `WebKitGtkBindings`
+- **macOS**: `MacOSWebViewEngine`, `MacOSWindowEngine`, `MacOSDialogEngine`, `MacOSMenuEngine`, etc.
+- **Windows**: `WindowsWebViewEngine`, `WindowsWindowEngine`, `Win32Bindings`
+- **Linux**: `LinuxWebViewEngine`, `LinuxWindowEngine`, `GtkBindings`
 
 ## Build Process
 
