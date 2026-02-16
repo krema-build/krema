@@ -7,8 +7,12 @@ import java.lang.foreign.SymbolLookup;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.JarFile;
 
 /**
  * Loads native libraries in a cross-platform manner.
@@ -128,6 +132,23 @@ public final class NativeLibraryLoader {
             System.out.println("[NativeLibraryLoader] Extracted " + libraryFileName + " (" + Files.size(libPath) + " bytes)");
             System.out.flush();
 
+            // Extract companion files (e.g., libwinpthread-1.dll needed by webview.dll on Windows)
+            List<Path> companionPaths = extractCompanionFiles(resourceDir, libraryFileName, tempDir);
+
+            // Pre-load companion DLLs so the OS loader can find them when loading the main library.
+            // On Windows, LoadLibraryW does not search the DLL's own directory for dependencies;
+            // pre-loading ensures they appear in the loaded-module list.
+            for (Path companion : companionPaths) {
+                try {
+                    System.out.println("[NativeLibraryLoader] Pre-loading companion: " + companion);
+                    System.out.flush();
+                    SymbolLookup.libraryLookup(companion, Arena.global());
+                } catch (IllegalArgumentException e) {
+                    System.out.println("[NativeLibraryLoader] Warning: failed to pre-load companion: " + companion + " (" + e.getMessage() + ")");
+                    System.out.flush();
+                }
+            }
+
             return libPath;
         } catch (IOException e) {
             System.out.println("[NativeLibraryLoader] extractFromJar failed: " + e);
@@ -136,6 +157,69 @@ public final class NativeLibraryLoader {
         }
     }
 
+
+    /**
+     * Extracts companion native files from the same resource directory.
+     * This ensures dependency DLLs (like libwinpthread-1.dll) are co-located
+     * with the main library so the OS loader can find them.
+     */
+    private static List<Path> extractCompanionFiles(String resourceDir, String mainFileName, Path targetDir) {
+        List<String> companions = listCompanionFiles(resourceDir, mainFileName);
+        List<Path> extractedPaths = new ArrayList<>();
+        for (String fileName : companions) {
+            try (var is = NativeLibraryLoader.class.getResourceAsStream(resourceDir + fileName)) {
+                if (is == null) continue;
+                Path target = targetDir.resolve(fileName);
+                Files.copy(is, target, StandardCopyOption.REPLACE_EXISTING);
+                target.toFile().deleteOnExit();
+                extractedPaths.add(target);
+                System.out.println("[NativeLibraryLoader] Extracted companion: " + fileName);
+                System.out.flush();
+            } catch (IOException ignored) {}
+        }
+        return extractedPaths;
+    }
+
+    private static List<String> listCompanionFiles(String resourceDir, String mainFileName) {
+        try {
+            var codeSource = NativeLibraryLoader.class.getProtectionDomain().getCodeSource();
+            if (codeSource != null && codeSource.getLocation() != null) {
+                Path jarPath = Path.of(codeSource.getLocation().toURI());
+                if (Files.isRegularFile(jarPath)) {
+                    List<String> files = new ArrayList<>();
+                    String prefix = resourceDir.startsWith("/") ? resourceDir.substring(1) : resourceDir;
+                    try (var jar = new JarFile(jarPath.toFile())) {
+                        var entries = jar.entries();
+                        while (entries.hasMoreElements()) {
+                            var entry = entries.nextElement();
+                            if (entry.isDirectory()) continue;
+                            String name = entry.getName();
+                            if (!name.startsWith(prefix)) continue;
+                            String fileName = name.substring(prefix.length());
+                            if (!fileName.isEmpty() && !fileName.contains("/") && !fileName.equals(mainFileName)) {
+                                files.add(fileName);
+                            }
+                        }
+                    }
+                    if (!files.isEmpty()) return files;
+                }
+            }
+        } catch (URISyntaxException | IOException | SecurityException ignored) {}
+
+        // Fallback: try directory listing via classloader
+        List<String> files = new ArrayList<>();
+        try (var dirStream = NativeLibraryLoader.class.getResourceAsStream(resourceDir)) {
+            if (dirStream != null) {
+                for (String line : new String(dirStream.readAllBytes()).split("\\R")) {
+                    String name = line.trim();
+                    if (!name.isEmpty() && !name.equals(mainFileName)) {
+                        files.add(name);
+                    }
+                }
+            }
+        } catch (IOException ignored) {}
+        return files;
+    }
 
     private static Path findNextToExecutable(String fileName) {
         try {

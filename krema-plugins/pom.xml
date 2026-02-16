@@ -7,7 +7,7 @@
     <parent>
         <groupId>build.krema</groupId>
         <artifactId>krema-parent</artifactId>
-        <version>0.3.2</version>
+		<version>0.3.2</version>
         <relativePath>../krema/pom.xml</relativePath>
     </parent>
 
