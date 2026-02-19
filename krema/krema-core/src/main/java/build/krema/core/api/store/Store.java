@@ -2,9 +2,9 @@ package build.krema.core.api.store;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
 import build.krema.core.KremaCommand;
+import build.krema.core.util.Json;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,8 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Store {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-        .enable(SerializationFeature.INDENT_OUTPUT);
+    private static final ObjectMapper MAPPER = Json.prettyMapper();
 
     private final Path storeDir;
     private final Map<String, Map<String, Object>> stores = new ConcurrentHashMap<>();

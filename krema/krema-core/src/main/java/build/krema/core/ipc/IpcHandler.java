@@ -6,17 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import build.krema.core.KremaWindow;
+import build.krema.core.util.Json;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,7 +28,7 @@ import build.krema.core.error.ErrorHandler;
  */
 public class IpcHandler {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = Json.mapper();
     private static final String BRIDGE_JS;
     private static final String DRAGDROP_JS;
     private static final String ERRORS_JS;
@@ -55,7 +55,8 @@ public class IpcHandler {
     }
 
     private final KremaWindow window;
-    private final Deque<String> recentCommands = new ArrayDeque<>();
+    private final String[] recentRing = new String[MAX_RECENT_COMMANDS];
+    private final AtomicInteger ringIndex = new AtomicInteger(0);
     private Function<IpcRequest, Object> commandHandler;
     private ErrorHandler errorHandler;
 
@@ -83,9 +84,15 @@ public class IpcHandler {
      * Returns a snapshot of the most recent IPC command names (up to 10).
      */
     public List<String> getRecentCommands() {
-        synchronized (recentCommands) {
-            return new ArrayList<>(recentCommands);
+        int idx = ringIndex.get();
+        List<String> result = new ArrayList<>(MAX_RECENT_COMMANDS);
+        for (int i = 0; i < MAX_RECENT_COMMANDS; i++) {
+            String cmd = recentRing[(idx + i) % MAX_RECENT_COMMANDS];
+            if (cmd != null) {
+                result.add(cmd);
+            }
         }
+        return result;
     }
 
     /**
@@ -158,13 +165,9 @@ public class IpcHandler {
             String command = cmdNode.asText();
             JsonNode cmdArgs = request.get("args");
 
-            // Track command in ring buffer
-            synchronized (recentCommands) {
-                if (recentCommands.size() >= MAX_RECENT_COMMANDS) {
-                    recentCommands.removeFirst();
-                }
-                recentCommands.addLast(command);
-            }
+            // Track command in lock-free ring buffer
+            int slot = ringIndex.getAndUpdate(i -> (i + 1) % MAX_RECENT_COMMANDS);
+            recentRing[slot] = command;
 
             // Create IPC request
             IpcRequest ipcRequest = new IpcRequest(command, cmdArgs);
@@ -281,8 +284,15 @@ public class IpcHandler {
             // Double-encode: onReply expects a JSON string that it JSON.parse's
             String quotedJson = MAPPER.writeValueAsString(json);
             // setTimeout(0) ensures the callback runs inside a Zone.js macrotask
-            String js = "setTimeout(function(){window.__webview__.onReply('"
-                    + seq + "', " + status + ", " + quotedJson + ");},0)";
+            String js = new StringBuilder(80 + quotedJson.length())
+                .append("setTimeout(function(){window.__webview__.onReply('")
+                .append(seq)
+                .append("', ")
+                .append(status)
+                .append(", ")
+                .append(quotedJson)
+                .append(");},0)")
+                .toString();
             window.eval(js);
         } catch (Throwable t) {
             System.err.println("[IPC] evalReply failed for seq=" + seq + ": " + t.getMessage());

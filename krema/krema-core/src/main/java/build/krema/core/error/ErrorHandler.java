@@ -12,9 +12,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import build.krema.core.event.EventEmitter;
+import build.krema.core.util.Json;
 import build.krema.core.util.LogContext;
 import build.krema.core.util.Logger;
 
@@ -33,7 +32,6 @@ import build.krema.core.util.Logger;
  */
 public class ErrorHandler implements Thread.UncaughtExceptionHandler {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final DateTimeFormatter CRASH_FILE_FORMAT =
         DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS").withZone(ZoneId.systemDefault());
 
@@ -183,7 +181,7 @@ public class ErrorHandler implements Thread.UncaughtExceptionHandler {
                 report.put("context", contextMap);
             }
 
-            Files.writeString(file, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(report));
+            Files.writeString(file, Json.prettyMapper().writeValueAsString(report));
         } catch (IOException e) {
             System.err.println("[ErrorHandler] Failed to write crash report: " + e.getMessage());
         }

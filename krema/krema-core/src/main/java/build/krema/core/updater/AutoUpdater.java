@@ -3,6 +3,7 @@ package build.krema.core.updater;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import build.krema.core.platform.Platform;
+import build.krema.core.util.Json;
 import build.krema.core.platform.PlatformDetector;
 import build.krema.core.util.Logger;
 
@@ -30,7 +31,7 @@ import java.util.function.Consumer;
 public class AutoUpdater {
 
     private static final Logger LOG = new Logger("AutoUpdater");
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = Json.mapper();
 
     private final AutoUpdaterConfig config;
     private final String target;

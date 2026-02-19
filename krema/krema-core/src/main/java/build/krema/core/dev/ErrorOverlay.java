@@ -3,6 +3,7 @@ package build.krema.core.dev;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import build.krema.core.util.Json;
 import build.krema.core.webview.WebViewEngine;
 
 import java.io.PrintWriter;
@@ -14,7 +15,7 @@ import java.util.Map;
  */
 public class ErrorOverlay {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = Json.mapper();
 
     private final WebViewEngine engine;
 

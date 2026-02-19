@@ -1,14 +1,13 @@
 package build.krema.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import build.krema.core.ipc.IpcHandler.IpcRequest;
+import build.krema.core.util.Json;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +26,6 @@ import java.util.ServiceLoader;
  * </ul>
  */
 public class CommandRegistry {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final Map<String, CommandHandler> handlers = new HashMap<>();
     private final Map<Class<?>, CommandRegistrar> registrars = new HashMap<>();
@@ -138,10 +135,10 @@ public class CommandRegistry {
     }
 
     /**
-     * Returns a list of all registered command names.
+     * Returns an unmodifiable list of all registered command names.
      */
     public List<String> getCommandNames() {
-        return new ArrayList<>(handlers.keySet());
+        return List.copyOf(handlers.keySet());
     }
 
     /**
@@ -217,7 +214,7 @@ public class CommandRegistry {
 
                 // If only one parameter and it's a POJO, deserialize entire args
                 if (parameters.length == 1 && isComplexType(type)) {
-                    result[i] = MAPPER.treeToValue(args, type);
+                    result[i] = Json.mapper().treeToValue(args, type);
                     continue;
                 }
 
@@ -264,7 +261,7 @@ public class CommandRegistry {
                 return text.isEmpty() ? '\0' : text.charAt(0);
             } else {
                 // Complex type - deserialize from JSON
-                return MAPPER.treeToValue(node, type);
+                return Json.mapper().treeToValue(node, type);
             }
         }
 

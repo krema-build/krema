@@ -1,11 +1,14 @@
 package build.krema.core.window;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import build.krema.core.util.Json;
 import build.krema.core.webview.WebViewEngine;
 import build.krema.core.webview.WebViewEngineFactory;
 
@@ -15,7 +18,7 @@ import build.krema.core.webview.WebViewEngineFactory;
  */
 public class WindowManager implements AutoCloseable {
 
-    private static WindowManager instance;
+    private static volatile WindowManager instance;
 
     private final Map<String, ManagedWindow> windows = new ConcurrentHashMap<>();
     private final AtomicLong windowCounter = new AtomicLong(0);
@@ -24,12 +27,20 @@ public class WindowManager implements AutoCloseable {
 
     /**
      * Gets the global WindowManager instance.
+     * Uses double-checked locking to avoid synchronization on the read path.
      */
-    public static synchronized WindowManager getInstance() {
-        if (instance == null) {
-            instance = new WindowManager();
+    public static WindowManager getInstance() {
+        WindowManager local = instance;
+        if (local == null) {
+            synchronized (WindowManager.class) {
+                local = instance;
+                if (local == null) {
+                    local = new WindowManager();
+                    instance = local;
+                }
+            }
         }
-        return instance;
+        return local;
     }
 
     /**
@@ -187,8 +198,7 @@ public class WindowManager implements AutoCloseable {
      */
     public void sendToWindow(String label, String event, Object payload) {
         getWindow(label).ifPresent(window -> {
-            String js = "window.__krema_event && window.__krema_event('" + event + "', " + toJson(payload) + ");";
-            window.eval(js);
+            window.eval(buildEventJs(event, payload));
         });
     }
 
@@ -196,26 +206,24 @@ public class WindowManager implements AutoCloseable {
      * Broadcasts a message/event to all windows.
      */
     public void broadcast(String event, Object payload) {
-        String js = "window.__krema_event && window.__krema_event('" + event + "', " + toJson(payload) + ");";
+        String js = buildEventJs(event, payload);
         windows.values().forEach(window -> window.eval(js));
     }
 
-    private String toJson(Object obj) {
-        if (obj == null) return "null";
-        if (obj instanceof String s) return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-        if (obj instanceof Number || obj instanceof Boolean) return obj.toString();
-        if (obj instanceof Map<?, ?> map) {
-            StringBuilder sb = new StringBuilder("{");
-            boolean first = true;
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                if (!first) sb.append(",");
-                first = false;
-                sb.append("\"").append(entry.getKey()).append("\":").append(toJson(entry.getValue()));
-            }
-            sb.append("}");
-            return sb.toString();
+    private String buildEventJs(String event, Object payload) {
+        try {
+            String json = Json.mapper().writeValueAsString(payload);
+            return new StringBuilder(64 + json.length())
+                .append("window.__krema_event && window.__krema_event('")
+                .append(event)
+                .append("', ")
+                .append(json)
+                .append(");")
+                .toString();
+        } catch (JsonProcessingException e) {
+            System.err.println("[Krema] Failed to serialize event payload: " + e.getMessage());
+            return "";
         }
-        return "\"" + obj.toString() + "\"";
     }
 
     @Override

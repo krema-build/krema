@@ -3,6 +3,7 @@ package build.krema.core.event;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import build.krema.core.util.Json;
 import build.krema.core.webview.WebViewEngine;
 
 import java.util.List;
@@ -18,7 +19,7 @@ import java.util.function.Consumer;
  */
 public class EventEmitter {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = Json.mapper();
 
     private final WebViewEngine engine;
     private final Map<String, List<Consumer<KremaEvent>>> listeners = new ConcurrentHashMap<>();
@@ -58,12 +59,33 @@ public class EventEmitter {
                 "payload", event.payload() != null ? event.payload() : Map.of(),
                 "timestamp", event.timestamp()
             ));
-            // __krema_emit expects (eventName, dataJson) as separate params
-            String escapedPayload = payloadJson.replace("\\", "\\\\").replace("'", "\\'");
-            String js = "window.__krema_emit && window.__krema_emit('" + event.name() + "', '" + escapedPayload + "')";
-            engine.eval(js);
+
+            StringBuilder js = new StringBuilder(64 + payloadJson.length());
+            js.append("window.__krema_emit && window.__krema_emit('")
+              .append(event.name())
+              .append("', '");
+            escapeForJs(payloadJson, js);
+            js.append("')");
+
+            engine.eval(js.toString());
         } catch (JsonProcessingException e) {
             System.err.println("[Krema] Failed to serialize event: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Single-pass escape of backslash and single-quote for embedding in a JS single-quoted string.
+     */
+    private static void escapeForJs(String input, StringBuilder out) {
+        for (int i = 0, len = input.length(); i < len; i++) {
+            char c = input.charAt(i);
+            if (c == '\\') {
+                out.append("\\\\");
+            } else if (c == '\'') {
+                out.append("\\'");
+            } else {
+                out.append(c);
+            }
         }
     }
 

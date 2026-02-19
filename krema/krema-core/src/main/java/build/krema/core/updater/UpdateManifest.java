@@ -2,7 +2,8 @@ package build.krema.core.updater;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import build.krema.core.util.Json;
 
 import java.io.IOException;
 import java.util.Map;
@@ -145,6 +146,6 @@ public class UpdateManifest {
      * Parses a JSON string into an UpdateManifest.
      */
     public static UpdateManifest parse(String json) throws IOException {
-        return new ObjectMapper().readValue(json, UpdateManifest.class);
+        return Json.mapper().readValue(json, UpdateManifest.class);
     }
 }

@@ -1,8 +1,5 @@
 package build.krema.core.util;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +16,6 @@ import java.util.Map;
  */
 public class JsonFileLogWriter implements AutoCloseable {
 
-    private final ObjectMapper mapper;
     private final Path logDir;
     private final long maxFileSize;
     private final int maxFiles;
@@ -32,8 +28,6 @@ public class JsonFileLogWriter implements AutoCloseable {
         this.maxFileSize = maxFileSize;
         this.maxFiles = maxFiles;
         this.logFile = logDir.resolve("app.jsonl");
-        this.mapper = new ObjectMapper();
-        this.mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8,
             StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
@@ -47,7 +41,7 @@ public class JsonFileLogWriter implements AutoCloseable {
                 rotate();
             }
             Map<String, Object> map = toFlatMap(entry);
-            String json = mapper.writeValueAsString(map);
+            String json = Json.mapper().writeValueAsString(map);
             writer.write(json);
             writer.write(System.lineSeparator());
             writer.flush();

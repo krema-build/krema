@@ -419,9 +419,7 @@ public final class KremaApplication {
     @SuppressWarnings("unchecked")
     private static Map<String, String> parseEnvVarsJson(String json) {
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper =
-                new com.fasterxml.jackson.databind.ObjectMapper();
-            return mapper.readValue(json, Map.class);
+            return build.krema.core.util.Json.mapper().readValue(json, Map.class);
         } catch (Exception e) {
             System.err.println("[Krema] Failed to parse KREMA_ENV_VARS: " + e.getMessage());
             return Collections.emptyMap();

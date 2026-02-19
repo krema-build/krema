@@ -1,7 +1,8 @@
 package build.krema.core.plugin;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import build.krema.core.util.Json;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,8 +14,6 @@ import java.util.List;
  * Plugin manifest parsed from plugin.json.
  */
 public class PluginManifest {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private String id;
     private String name;
@@ -28,11 +27,11 @@ public class PluginManifest {
     private List<String> dependencies;
 
     public static PluginManifest load(Path manifestPath) throws IOException {
-        return MAPPER.readValue(Files.newInputStream(manifestPath), PluginManifest.class);
+        return Json.mapper().readValue(Files.newInputStream(manifestPath), PluginManifest.class);
     }
 
     public static PluginManifest load(InputStream inputStream) throws IOException {
-        return MAPPER.readValue(inputStream, PluginManifest.class);
+        return Json.mapper().readValue(inputStream, PluginManifest.class);
     }
 
     public String getId() {
