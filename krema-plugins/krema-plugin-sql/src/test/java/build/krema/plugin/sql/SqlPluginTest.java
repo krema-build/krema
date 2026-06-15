@@ -4,6 +4,10 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.*;
 
@@ -69,16 +73,16 @@ class SqlPluginTest {
         @Test
         @DisplayName("opens in-memory database")
         void opensInMemoryDatabase() throws Exception {
-            boolean result = commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
+            boolean result = await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
             assertTrue(result);
         }
 
         @Test
         @DisplayName("throws when database already open")
         void throwsWhenAlreadyOpen() throws Exception {
-            commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
             assertThrows(IllegalStateException.class, () ->
-                commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+                await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"))));
         }
     }
 
@@ -88,17 +92,17 @@ class SqlPluginTest {
 
         @BeforeEach
         void openDb() throws Exception {
-            commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, age INTEGER)", null));
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, age INTEGER)", null)));
         }
 
         @Test
         @DisplayName("inserts row and returns affected count")
         void insertsRow() throws Exception {
-            SqlPlugin.SqlExecuteResult result = commands.execute(
+            SqlPlugin.SqlExecuteResult result = await(commands.execute(
                 new SqlPlugin.SqlExecuteRequest("testdb",
-                    "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Alice", 30)));
+                    "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Alice", 30))));
             assertEquals(1, result.rowsAffected());
             assertTrue(result.lastInsertId() > 0);
         }
@@ -106,26 +110,26 @@ class SqlPluginTest {
         @Test
         @DisplayName("updates rows and returns affected count")
         void updatesRows() throws Exception {
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Alice", 30)));
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Bob", 25)));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Alice", 30))));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Bob", 25))));
 
-            SqlPlugin.SqlExecuteResult result = commands.execute(
+            SqlPlugin.SqlExecuteResult result = await(commands.execute(
                 new SqlPlugin.SqlExecuteRequest("testdb",
-                    "UPDATE users SET age = ? WHERE age < ?", List.of(99, 31)));
+                    "UPDATE users SET age = ? WHERE age < ?", List.of(99, 31))));
             assertEquals(2, result.rowsAffected());
         }
 
         @Test
         @DisplayName("deletes rows and returns affected count")
         void deletesRows() throws Exception {
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Alice", 30)));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Alice", 30))));
 
-            SqlPlugin.SqlExecuteResult result = commands.execute(
+            SqlPlugin.SqlExecuteResult result = await(commands.execute(
                 new SqlPlugin.SqlExecuteRequest("testdb",
-                    "DELETE FROM users WHERE name = ?", List.of("Alice")));
+                    "DELETE FROM users WHERE name = ?", List.of("Alice"))));
             assertEquals(1, result.rowsAffected());
         }
 
@@ -133,16 +137,16 @@ class SqlPluginTest {
         @DisplayName("throws on SQL syntax error")
         void throwsOnSyntaxError() {
             assertThrows(SQLException.class, () ->
-                commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                    "INVALID SQL STATEMENT", null)));
+                await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                    "INVALID SQL STATEMENT", null))));
         }
 
         @Test
         @DisplayName("throws when database not open")
         void throwsWhenNotOpen() {
             assertThrows(IllegalStateException.class, () ->
-                commands.execute(new SqlPlugin.SqlExecuteRequest("nonexistent",
-                    "SELECT 1", null)));
+                await(commands.execute(new SqlPlugin.SqlExecuteRequest("nonexistent",
+                    "SELECT 1", null))));
         }
     }
 
@@ -152,20 +156,20 @@ class SqlPluginTest {
 
         @BeforeEach
         void openAndSeed() throws Exception {
-            commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, age INTEGER)", null));
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Alice", 30)));
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Bob", 25)));
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, age INTEGER)", null)));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Alice", 30))));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO users (name, age) VALUES (?, ?)", List.of("Bob", 25))));
         }
 
         @Test
         @DisplayName("returns all rows")
         void returnsAllRows() throws Exception {
-            List<Map<String, Object>> rows = commands.select(
-                new SqlPlugin.SqlSelectRequest("testdb", "SELECT * FROM users ORDER BY name", null));
+            List<Map<String, Object>> rows = await(commands.select(
+                new SqlPlugin.SqlSelectRequest("testdb", "SELECT * FROM users ORDER BY name", null)));
             assertEquals(2, rows.size());
             assertEquals("Alice", rows.get(0).get("name"));
             assertEquals("Bob", rows.get(1).get("name"));
@@ -174,9 +178,9 @@ class SqlPluginTest {
         @Test
         @DisplayName("returns filtered rows with parameters")
         void returnsFilteredRows() throws Exception {
-            List<Map<String, Object>> rows = commands.select(
+            List<Map<String, Object>> rows = await(commands.select(
                 new SqlPlugin.SqlSelectRequest("testdb",
-                    "SELECT name FROM users WHERE age > ?", List.of(27)));
+                    "SELECT name FROM users WHERE age > ?", List.of(27))));
             assertEquals(1, rows.size());
             assertEquals("Alice", rows.get(0).get("name"));
         }
@@ -184,9 +188,9 @@ class SqlPluginTest {
         @Test
         @DisplayName("returns empty list for no matches")
         void returnsEmptyForNoMatches() throws Exception {
-            List<Map<String, Object>> rows = commands.select(
+            List<Map<String, Object>> rows = await(commands.select(
                 new SqlPlugin.SqlSelectRequest("testdb",
-                    "SELECT * FROM users WHERE age > ?", List.of(100)));
+                    "SELECT * FROM users WHERE age > ?", List.of(100))));
             assertTrue(rows.isEmpty());
         }
     }
@@ -197,41 +201,41 @@ class SqlPluginTest {
 
         @BeforeEach
         void openDb() throws Exception {
-            commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
         }
 
         @Test
         @DisplayName("executes multiple statements in transaction")
         void executesInTransaction() throws Exception {
-            boolean result = commands.batch(new SqlPlugin.SqlBatchRequest("testdb", List.of(
+            boolean result = await(commands.batch(new SqlPlugin.SqlBatchRequest("testdb", List.of(
                 "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)",
                 "INSERT INTO items (name) VALUES ('A')",
                 "INSERT INTO items (name) VALUES ('B')"
-            )));
+            ))));
             assertTrue(result);
 
-            List<Map<String, Object>> rows = commands.select(
-                new SqlPlugin.SqlSelectRequest("testdb", "SELECT * FROM items", null));
+            List<Map<String, Object>> rows = await(commands.select(
+                new SqlPlugin.SqlSelectRequest("testdb", "SELECT * FROM items", null)));
             assertEquals(2, rows.size());
         }
 
         @Test
         @DisplayName("rolls back on error")
         void rollsBackOnError() throws Exception {
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL)", null));
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO items (name) VALUES (?)", List.of("existing")));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL)", null)));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO items (name) VALUES (?)", List.of("existing"))));
 
             assertThrows(SQLException.class, () ->
-                commands.batch(new SqlPlugin.SqlBatchRequest("testdb", List.of(
+                await(commands.batch(new SqlPlugin.SqlBatchRequest("testdb", List.of(
                     "INSERT INTO items (name) VALUES ('A')",
                     "INSERT INTO items (name) VALUES (NULL)" // violates NOT NULL
-                ))));
+                )))));
 
             // Only the original row should remain
-            List<Map<String, Object>> rows = commands.select(
-                new SqlPlugin.SqlSelectRequest("testdb", "SELECT * FROM items", null));
+            List<Map<String, Object>> rows = await(commands.select(
+                new SqlPlugin.SqlSelectRequest("testdb", "SELECT * FROM items", null)));
             assertEquals(1, rows.size());
         }
     }
@@ -243,14 +247,120 @@ class SqlPluginTest {
         @Test
         @DisplayName("closes open database")
         void closesOpenDatabase() throws Exception {
-            commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
-            assertTrue(commands.close("testdb"));
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+            assertTrue(await(commands.close("testdb")));
         }
 
         @Test
         @DisplayName("returns false for nonexistent database")
         void returnsFalseForNonexistent() throws Exception {
-            assertFalse(commands.close("nonexistent"));
+            assertFalse(await(commands.close("nonexistent")));
+        }
+    }
+
+    @Nested
+    @DisplayName("Connection lifecycle races")
+    class ConnectionLifecycleRaces {
+
+        @Test
+        @DisplayName("duplicate open is rejected")
+        void duplicateOpenIsRejected() throws Exception {
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+
+            IllegalStateException error = assertThrows(IllegalStateException.class, () ->
+                await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"))));
+            assertTrue(error.getMessage().contains("already open"));
+        }
+
+        @Test
+        @DisplayName("reopen while close is queued is rejected as closing")
+        void reopenWhileClosingIsRejected() throws Exception {
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb", "CREATE TABLE items (id INTEGER)", null)));
+
+            CompletableFuture<List<Map<String, Object>>> slowSelect = commands.select(new SqlPlugin.SqlSelectRequest(
+                "testdb",
+                "WITH RECURSIVE cnt(x) AS (VALUES(1) UNION ALL SELECT x + 1 FROM cnt WHERE x < 2000) "
+                    + "SELECT sum(a.x * b.x) AS total FROM cnt a, cnt b",
+                null));
+            CompletableFuture<Boolean> close = commands.close("testdb");
+            CompletableFuture<Boolean> reopen = commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
+
+            IllegalStateException error = assertThrows(IllegalStateException.class, () ->
+                await(reopen));
+            assertEquals("Database 'testdb' is closing; retry after close completes", error.getMessage());
+
+            await(slowSelect);
+            assertTrue(await(close));
+        }
+
+        @Test
+        @DisplayName("close during in-flight open closes after open completes")
+        void closeDuringInFlightOpenClosesAfterOpenCompletes() throws Exception {
+            CompletableFuture<Boolean> open = commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
+            CompletableFuture<Boolean> close = commands.close("testdb");
+
+            assertTrue(await(open));
+            assertTrue(await(close));
+            assertThrows(IllegalStateException.class, () ->
+                await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb", "SELECT 1", null))));
+        }
+
+        @Test
+        @DisplayName("failed open cleans up and close returns false")
+        void openFailThenCloseCleansUp() throws Exception {
+            assertThrows(SQLException.class, () ->
+                await(commands.open(new SqlPlugin.SqlOpenRequest("broken", "/no/such/parent/krema.db"))));
+
+            assertFalse(await(commands.close("broken")));
+            assertTrue(await(commands.open(new SqlPlugin.SqlOpenRequest("broken", ":memory:"))));
+        }
+
+        @Test
+        @DisplayName("operations after close reject as not open")
+        void operationAfterCloseRejects() throws Exception {
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+            assertTrue(await(commands.close("testdb")));
+
+            IllegalStateException error = assertThrows(IllegalStateException.class, () ->
+                await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb", "SELECT 1", null))));
+            assertEquals("No database named 'testdb' is open", error.getMessage());
+        }
+
+        @Test
+        @DisplayName("double close disposes once and returns false on the second close")
+        void doubleCloseReturnsFalseOnSecondClose() throws Exception {
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+
+            CompletableFuture<Boolean> firstClose = commands.close("testdb");
+            CompletableFuture<Boolean> secondClose = commands.close("testdb");
+
+            assertTrue(await(firstClose));
+            assertFalse(await(secondClose));
+        }
+
+        @Test
+        @DisplayName("statements execute in FIFO submission order")
+        void statementsExecuteInSubmissionOrder() throws Exception {
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT, value TEXT)", null)));
+
+            CompletableFuture<SqlPlugin.SqlExecuteResult> first = commands.execute(
+                new SqlPlugin.SqlExecuteRequest("testdb", "INSERT INTO log (value) VALUES ('first')", null));
+            CompletableFuture<SqlPlugin.SqlExecuteResult> second = commands.execute(
+                new SqlPlugin.SqlExecuteRequest("testdb", "INSERT INTO log (value) VALUES ('second')", null));
+            CompletableFuture<SqlPlugin.SqlExecuteResult> third = commands.execute(
+                new SqlPlugin.SqlExecuteRequest("testdb", "INSERT INTO log (value) VALUES ('third')", null));
+
+            await(first);
+            await(second);
+            await(third);
+
+            List<Map<String, Object>> rows = await(commands.select(new SqlPlugin.SqlSelectRequest(
+                "testdb", "SELECT value FROM log ORDER BY id", null)));
+            assertEquals(List.of("first", "second", "third"),
+                rows.stream().map(row -> row.get("value")).toList());
         }
     }
 
@@ -261,13 +371,13 @@ class SqlPluginTest {
         @Test
         @DisplayName("shutdown closes all connections")
         void shutdownClosesConnections() throws Exception {
-            commands.open(new SqlPlugin.SqlOpenRequest("db1", ":memory:"));
-            commands.open(new SqlPlugin.SqlOpenRequest("db2", ":memory:"));
+            await(commands.open(new SqlPlugin.SqlOpenRequest("db1", ":memory:")));
+            await(commands.open(new SqlPlugin.SqlOpenRequest("db2", ":memory:")));
             plugin.shutdown();
 
             // After shutdown, connections should no longer be accessible
             assertThrows(IllegalStateException.class, () ->
-                commands.execute(new SqlPlugin.SqlExecuteRequest("db1", "SELECT 1", null)));
+                await(commands.execute(new SqlPlugin.SqlExecuteRequest("db1", "SELECT 1", null))));
         }
     }
 
@@ -277,10 +387,10 @@ class SqlPluginTest {
 
         @BeforeEach
         void openDb() throws Exception {
-            commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"));
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+            await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
                 "CREATE TABLE data (id INTEGER PRIMARY KEY, text_val TEXT, int_val INTEGER, real_val REAL, bool_val INTEGER)",
-                null));
+                null)));
         }
 
         @Test
@@ -288,50 +398,50 @@ class SqlPluginTest {
         void bindsNull() throws Exception {
             java.util.ArrayList<Object> params = new java.util.ArrayList<>();
             params.add(null);
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO data (text_val) VALUES (?)", params));
-            List<Map<String, Object>> rows = commands.select(
-                new SqlPlugin.SqlSelectRequest("testdb", "SELECT text_val FROM data", null));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO data (text_val) VALUES (?)", params)));
+            List<Map<String, Object>> rows = await(commands.select(
+                new SqlPlugin.SqlSelectRequest("testdb", "SELECT text_val FROM data", null)));
             assertNull(rows.get(0).get("text_val"));
         }
 
         @Test
         @DisplayName("binds string parameters")
         void bindsStrings() throws Exception {
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO data (text_val) VALUES (?)", List.of("hello")));
-            List<Map<String, Object>> rows = commands.select(
-                new SqlPlugin.SqlSelectRequest("testdb", "SELECT text_val FROM data", null));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO data (text_val) VALUES (?)", List.of("hello"))));
+            List<Map<String, Object>> rows = await(commands.select(
+                new SqlPlugin.SqlSelectRequest("testdb", "SELECT text_val FROM data", null)));
             assertEquals("hello", rows.get(0).get("text_val"));
         }
 
         @Test
         @DisplayName("binds integer parameters")
         void bindsIntegers() throws Exception {
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO data (int_val) VALUES (?)", List.of(42)));
-            List<Map<String, Object>> rows = commands.select(
-                new SqlPlugin.SqlSelectRequest("testdb", "SELECT int_val FROM data", null));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO data (int_val) VALUES (?)", List.of(42))));
+            List<Map<String, Object>> rows = await(commands.select(
+                new SqlPlugin.SqlSelectRequest("testdb", "SELECT int_val FROM data", null)));
             assertEquals(42, ((Number) rows.get(0).get("int_val")).intValue());
         }
 
         @Test
         @DisplayName("binds double parameters")
         void bindsDoubles() throws Exception {
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO data (real_val) VALUES (?)", List.of(3.14)));
-            List<Map<String, Object>> rows = commands.select(
-                new SqlPlugin.SqlSelectRequest("testdb", "SELECT real_val FROM data", null));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO data (real_val) VALUES (?)", List.of(3.14))));
+            List<Map<String, Object>> rows = await(commands.select(
+                new SqlPlugin.SqlSelectRequest("testdb", "SELECT real_val FROM data", null)));
             assertEquals(3.14, ((Number) rows.get(0).get("real_val")).doubleValue(), 0.001);
         }
 
         @Test
         @DisplayName("binds boolean parameters")
         void bindsBooleans() throws Exception {
-            commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
-                "INSERT INTO data (bool_val) VALUES (?)", List.of(true)));
-            List<Map<String, Object>> rows = commands.select(
-                new SqlPlugin.SqlSelectRequest("testdb", "SELECT bool_val FROM data", null));
+            await(commands.execute(new SqlPlugin.SqlExecuteRequest("testdb",
+                "INSERT INTO data (bool_val) VALUES (?)", List.of(true))));
+            List<Map<String, Object>> rows = await(commands.select(
+                new SqlPlugin.SqlSelectRequest("testdb", "SELECT bool_val FROM data", null)));
             assertNotNull(rows.get(0).get("bool_val"));
         }
     }
@@ -347,5 +457,22 @@ class SqlPluginTest {
         @Override public boolean hasPermission(String permission) { return true; }
         @Override public String getAppName() { return "test-app"; }
         @Override public String getAppVersion() { return "1.0.0"; }
+    }
+
+    private static <T> T await(CompletableFuture<T> future) throws Exception {
+        try {
+            return future.get(5, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception exception) {
+                throw exception;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new RuntimeException(cause);
+        } catch (TimeoutException e) {
+            throw new AssertionError("Timed out waiting for SQL command future", e);
+        }
     }
 }

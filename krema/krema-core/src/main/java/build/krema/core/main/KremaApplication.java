@@ -175,7 +175,7 @@ public final class KremaApplication {
             // Set up IPC
             System.out.println("[Krema] Setting up IPC...");
             System.out.flush();
-            IpcHandler ipc = new IpcHandler(window);
+            IpcHandler ipc = new IpcHandler(window, config.devUrl != null);
             ipc.setCommandHandler(request -> {
                 try {
                     return registry.invoke(request);

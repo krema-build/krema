@@ -1,11 +1,13 @@
 package build.krema.core.event;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import build.krema.core.event.EventEmitter;
-import build.krema.core.event.KremaEvent;
+import build.krema.core.util.Json;
 import build.krema.core.webview.WebViewEngine;
 
 import java.util.ArrayList;
@@ -16,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("EventEmitter")
 class EventEmitterTest {
+
+    private static final ObjectMapper MAPPER = Json.mapper();
 
     private StubWebViewEngine engine;
     private EventEmitter emitter;
@@ -118,14 +122,28 @@ class EventEmitterTest {
     }
 
     @Test
-    @DisplayName("emit calls engine.eval for frontend notification")
+    @DisplayName("emit calls engine.eval for frontend notification via macrotask")
     void emitCallsEngineEval() {
         emitter.emit("my-event", "data");
 
         assertFalse(engine.evalCalls.isEmpty());
         String js = engine.evalCalls.get(0);
-        assertTrue(js.contains("__krema_emit"));
-        assertTrue(js.contains("my-event"));
+        assertTrue(js.startsWith("setTimeout(function(){ window.__krema_emit && window.__krema_emit('my-event', '"));
+        assertTrue(js.endsWith("'); },0)"));
+    }
+
+    @Test
+    @DisplayName("emit preserves payload JSON through JS escaping")
+    void emitEscapesPayloadJsonWithoutChangingPayload() throws Exception {
+        emitter.emit("quote\\event", "value with 'quote' and \\slash");
+
+        String js = engine.evalCalls.get(0);
+        assertTrue(js.startsWith("setTimeout(function(){ window.__krema_emit && window.__krema_emit('quote\\\\event', '"));
+        assertTrue(js.endsWith("'); },0)"));
+
+        JsonNode eventEnvelope = MAPPER.readTree(unescapeJsSingleQuotedArgument(js, 1));
+        assertEquals("value with 'quote' and \\slash", eventEnvelope.get("payload").asText());
+        assertTrue(eventEnvelope.has("timestamp"));
     }
 
     @Test
@@ -162,5 +180,57 @@ class EventEmitterTest {
         @Override public void terminate() {}
         @Override public boolean isRunning() { return false; }
         @Override public void close() {}
+    }
+
+    private static String unescapeJsSingleQuotedArgument(String js, int argumentIndex) {
+        int start = -1;
+        for (int i = 0; i <= argumentIndex; i++) {
+            start = js.indexOf('\'', start + 1);
+            if (start < 0) {
+                fail("missing argument " + argumentIndex + " in " + js);
+            }
+            int end = findJsSingleQuotedEnd(js, start + 1);
+            if (i == argumentIndex) {
+                return unescapeJsSingleQuoted(js.substring(start + 1, end));
+            }
+            start = end;
+        }
+        throw new AssertionError("unreachable");
+    }
+
+    private static int findJsSingleQuotedEnd(String js, int start) {
+        boolean escaped = false;
+        for (int i = start; i < js.length(); i++) {
+            char c = js.charAt(i);
+            if (escaped) {
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == '\'') {
+                return i;
+            }
+        }
+        fail("unterminated single-quoted argument in " + js);
+        throw new AssertionError("unreachable");
+    }
+
+    private static String unescapeJsSingleQuoted(String value) {
+        StringBuilder out = new StringBuilder(value.length());
+        boolean escaped = false;
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (escaped) {
+                out.append(c);
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else {
+                out.append(c);
+            }
+        }
+        if (escaped) {
+            out.append('\\');
+        }
+        return out.toString();
     }
 }

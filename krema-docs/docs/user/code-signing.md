@@ -1,6 +1,6 @@
 # Code Signing Guide
 
-This guide covers how to sign your Crema application for distribution on macOS and Windows. Code signing establishes your identity as the developer, prevents tampering warnings, and is required for macOS notarization.
+This guide covers how to sign your Krema application for distribution on macOS and Windows. Code signing establishes your identity as the developer, prevents tampering warnings, and is required for macOS notarization.
 
 ---
 
@@ -36,7 +36,7 @@ The quoted string is your **signing identity**.
 
 ### Configuration
 
-Add the following to your `crema.toml`:
+Add the following to your `krema.toml`:
 
 ```toml
 [bundle.macos]
@@ -45,7 +45,7 @@ signing_identity = "Developer ID Application: Your Name (TEAMID)"
 
 #### Optional: custom entitlements
 
-Crema generates default entitlements for JVM apps automatically. If you need additional entitlements (e.g., network access, camera), create an `entitlements.plist`:
+Krema generates default entitlements for JVM apps automatically. If you need additional entitlements (e.g., network access, camera), create an `entitlements.plist`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -73,7 +73,7 @@ signing_identity = "Developer ID Application: Your Name (TEAMID)"
 entitlements = "entitlements.plist"
 ```
 
-The three `com.apple.security.cs.*` entitlements are required for JVM applications and are included in the defaults that Crema generates when no custom file is specified.
+The three `com.apple.security.cs.*` entitlements are required for JVM applications and are included in the defaults that Krema generates when no custom file is specified.
 
 ### Notarization
 
@@ -93,7 +93,7 @@ notarization_team_id = "TEAMID"
 Set your app-specific password as an environment variable:
 
 ```bash
-export CREMA_APPLE_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+export KREMA_APPLE_PASSWORD="xxxx-xxxx-xxxx-xxxx"
 ```
 
 > **Generating an app-specific password:** Go to [appleid.apple.com](https://appleid.apple.com), sign in, go to **Sign-In and Security > App-Specific Passwords**, and generate one. This is *not* your Apple ID password.
@@ -105,30 +105,30 @@ The `APPLE_PASSWORD` environment variable is also accepted as a fallback.
 If you prefer not to use environment variables, you can store credentials in the macOS Keychain:
 
 ```bash
-xcrun notarytool store-credentials crema-notarization \
+xcrun notarytool store-credentials krema-notarization \
   --apple-id "your@email.com" \
   --team-id "TEAMID" \
   --password "xxxx-xxxx-xxxx-xxxx"
 ```
 
-When `notarization_apple_id` and `notarization_team_id` are not set in your config, Crema falls back to the `crema-notarization` keychain profile automatically.
+When `notarization_apple_id` and `notarization_team_id` are not set in your config, Krema falls back to the `krema-notarization` keychain profile automatically.
 
 ### Building and signing
 
-Signing and notarization are opt-in via flags. The config tells Crema *how* to sign; the flags tell it *whether* to sign.
+Signing and notarization are opt-in via flags. The config tells Krema *how* to sign; the flags tell it *whether* to sign.
 
 ```bash
 # Build only — no signing
-crema bundle --type dmg
+krema bundle --type dmg
 
 # Sign the bundle
-crema bundle --type dmg --sign
+krema bundle --type dmg --sign
 
 # Sign and notarize (--notarize implies --sign)
-crema bundle --type dmg --notarize
+krema bundle --type dmg --notarize
 ```
 
-With `--sign`, Crema will:
+With `--sign`, Krema will:
 
 1. Build your application
 2. Create the `.app` bundle
@@ -136,7 +136,7 @@ With `--sign`, Crema will:
 4. Create the `.dmg`
 5. Sign the `.dmg`
 
-With `--notarize`, Crema additionally:
+With `--notarize`, Krema additionally:
 
 6. Submits the `.dmg` to Apple for notarization
 7. Staples the notarization ticket to the `.dmg`
@@ -168,7 +168,7 @@ spctl --assess --type open --context context:primary-signature -v target/bundle/
 
 Download from [developer.microsoft.com/en-us/windows/downloads/windows-sdk](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/). During installation, make sure **Windows SDK Signing Tools for Desktop Apps** is selected.
 
-Crema searches for `signtool.exe` in:
+Krema searches for `signtool.exe` in:
 
 1. Your system `PATH`
 2. `C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe`
@@ -176,7 +176,7 @@ Crema searches for `signtool.exe` in:
 
 ### Configuration
 
-Add the following to your `crema.toml`:
+Add the following to your `krema.toml`:
 
 ```toml
 [bundle.windows]
@@ -186,7 +186,7 @@ signing_certificate = "certs/myapp.pfx"
 Set your certificate password as an environment variable:
 
 ```bash
-set CREMA_WINDOWS_SIGN_PASSWORD=your-certificate-password
+set KREMA_WINDOWS_SIGN_PASSWORD=your-certificate-password
 ```
 
 #### Optional: custom timestamp server
@@ -207,13 +207,13 @@ Signing is opt-in via the `--sign` flag:
 
 ```bash
 # Build only — no signing
-crema bundle
+krema bundle
 
 # Sign the executable
-crema bundle --sign
+krema bundle --sign
 ```
 
-With `--sign`, Crema will:
+With `--sign`, Krema will:
 
 1. Build your application
 2. Create the `.exe` installer via jpackage
@@ -247,11 +247,11 @@ If the certificate shows as `CSSMERR_TP_NOT_TRUSTED`, open Keychain Access, find
 
 - Verify your Team ID at [developer.apple.com/account](https://developer.apple.com/account) (it's shown under Membership)
 - Make sure you're using an **app-specific password**, not your Apple ID password
-- Check that the `CREMA_APPLE_PASSWORD` environment variable is set in the shell where you run `crema bundle`
+- Check that the `KREMA_APPLE_PASSWORD` environment variable is set in the shell where you run `krema bundle`
 
 ### macOS: notarization fails with "The signature is invalid"
 
-The app must be signed with hardened runtime (`--options runtime`). Crema enables this automatically. If you see this error, ensure your signing identity is a **Developer ID Application** certificate, not a development or distribution certificate.
+The app must be signed with hardened runtime (`--options runtime`). Krema enables this automatically. If you see this error, ensure your signing identity is a **Developer ID Application** certificate, not a development or distribution certificate.
 
 ### Windows: "signtool.exe not found"
 
@@ -263,12 +263,12 @@ set PATH=%PATH%;C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64
 
 Replace `10.0.22621.0` with your installed SDK version.
 
-### Windows: "CREMA_WINDOWS_SIGN_PASSWORD not found"
+### Windows: "KREMA_WINDOWS_SIGN_PASSWORD not found"
 
 Set the environment variable before running the bundle command:
 
 ```bash
-set CREMA_WINDOWS_SIGN_PASSWORD=your-password
+set KREMA_WINDOWS_SIGN_PASSWORD=your-password
 ```
 
 For CI/CD, use your platform's secrets mechanism (GitHub Actions secrets, Azure DevOps variables, etc.).
@@ -294,8 +294,8 @@ For CI/CD, use your platform's secrets mechanism (GitHub Actions secrets, Azure 
 
 - name: Bundle, sign, and notarize
   env:
-    CREMA_APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-  run: crema bundle --type dmg --notarize
+    KREMA_APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+  run: krema bundle --type dmg --notarize
 ```
 
 ### GitHub Actions example (Windows)
@@ -307,8 +307,8 @@ For CI/CD, use your platform's secrets mechanism (GitHub Actions secrets, Azure 
 
 - name: Bundle and sign
   env:
-    CREMA_WINDOWS_SIGN_PASSWORD: ${{ secrets.WINDOWS_SIGN_PASSWORD }}
-  run: crema bundle --sign
+    KREMA_WINDOWS_SIGN_PASSWORD: ${{ secrets.WINDOWS_SIGN_PASSWORD }}
+  run: krema bundle --sign
 ```
 
 ---
@@ -321,14 +321,14 @@ For CI/CD, use your platform's secrets mechanism (GitHub Actions secrets, Azure 
 signing_identity = "Developer ID Application: Your Name (TEAMID)"
 
 # Optional. Path to a custom entitlements.plist file.
-# If omitted, Crema generates defaults with JVM-required entitlements.
+# If omitted, Krema generates defaults with JVM-required entitlements.
 entitlements = "entitlements.plist"
 
 # Optional. Required for notarization via Apple ID mode.
 notarization_apple_id = "your@email.com"
 notarization_team_id = "TEAMID"
-# Password read from CREMA_APPLE_PASSWORD or APPLE_PASSWORD env var.
-# If neither apple_id nor team_id is set, falls back to "crema-notarization" keychain profile.
+# Password read from KREMA_APPLE_PASSWORD or APPLE_PASSWORD env var.
+# If neither apple_id nor team_id is set, falls back to "krema-notarization" keychain profile.
 
 [bundle.windows]
 # Required for signing. Path to your .pfx certificate file.
@@ -336,5 +336,5 @@ signing_certificate = "certs/myapp.pfx"
 
 # Optional. Timestamp server URL. Default: http://timestamp.digicert.com
 timestamp_url = "http://timestamp.digicert.com"
-# Password read from CREMA_WINDOWS_SIGN_PASSWORD env var.
+# Password read from KREMA_WINDOWS_SIGN_PASSWORD env var.
 ```

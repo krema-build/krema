@@ -1,6 +1,6 @@
-# Migration Guide: Electron & Tauri to Crema
+# Migration Guide: Electron & Tauri to Krema
 
-Migrate your existing desktop application to Crema from Electron or Tauri.
+Migrate your existing desktop application to Krema from Electron or Tauri.
 
 ---
 
@@ -18,9 +18,9 @@ Migrate your existing desktop application to Crema from Electron or Tauri.
 
 ## Overview
 
-### Why Migrate to Crema?
+### Why Migrate to Krema?
 
-| Aspect | Crema Advantage |
+| Aspect | Krema Advantage |
 |--------|-----------------|
 | **Bundle Size** | ~50-80MB vs Electron's ~150-200MB |
 | **Memory** | ~80-100MB vs Electron's ~150-300MB |
@@ -67,12 +67,12 @@ Tauri:
 │         WebView2/WebKitGTK)            │
 └─────────────────────────────────────────┘
 
-Crema:
+Krema:
 ┌─────────────────────────────────────────┐
-│               Crema App                 │
+│               Krema App                 │
 ├─────────────────────────────────────────┤
 │  Java Backend    │  WebView Frontend   │
-│  - @CremaCommand │  - HTML/CSS/JS      │
+│  - @KremaCommand │  - HTML/CSS/JS      │
 │  - FFM APIs      │  - React/Vue/etc    │
 ├──────────────────┴─────────────────────┤
 │        System WebView (WKWebView/       │
@@ -98,10 +98,10 @@ my-electron-app/
 └── node_modules/
 ```
 
-**Crema:**
+**Krema:**
 ```
-my-crema-app/
-├── crema.toml        # Configuration (replaces electron-builder.json)
+my-krema-app/
+├── krema.toml        # Configuration (replaces electron-builder.json)
 ├── pom.xml           # Maven build
 ├── package.json      # Frontend only
 ├── src/              # Frontend
@@ -154,15 +154,15 @@ ipcMain.handle('get-app-path', () => {
 });
 ```
 
-**Crema (Main.java):**
+**Krema (Main.java):**
 ```java
 package com.example.myapp;
 
-import build.krema.Crema;
+import build.krema.core.Krema;
 
 public class Main {
     public static void main(String[] args) {
-        Crema.app()
+        Krema.app()
             .title("My App")
             .size(1200, 800)
             .prodAssets("/web")  // or .devUrl("http://localhost:5173")
@@ -172,11 +172,11 @@ public class Main {
 }
 ```
 
-**Crema (Commands.java):**
+**Krema (Commands.java):**
 ```java
 package com.example.myapp;
 
-import build.krema.command.CremaCommand;
+import build.krema.command.KremaCommand;
 import build.krema.api.path.AppPaths;
 
 import java.io.IOException;
@@ -185,24 +185,24 @@ import java.nio.file.Path;
 
 public class Commands {
 
-    @CremaCommand("read-file")
+    @KremaCommand("read-file")
     public String readFile(String filePath) throws IOException {
         return Files.readString(Path.of(filePath));
     }
 
-    @CremaCommand("write-file")
+    @KremaCommand("write-file")
     public void writeFile(String filePath, String content) throws IOException {
         Files.writeString(Path.of(filePath), content);
     }
 
-    @CremaCommand("get-app-path")
+    @KremaCommand("get-app-path")
     public String getAppPath() {
         return AppPaths.dataDir("my-app").toString();
     }
 }
 ```
 
-### Preload Script → Crema Bridge
+### Preload Script → Krema Bridge
 
 **Electron (preload.js):**
 ```javascript
@@ -218,16 +218,16 @@ contextBridge.exposeInMainWorld('api', {
 });
 ```
 
-**Crema (automatic):**
+**Krema (automatic):**
 
-Crema automatically injects the bridge. No preload script needed:
+Krema automatically injects the bridge. No preload script needed:
 
 ```javascript
 // Frontend code - works automatically
-window.crema.invoke('read-file', { filePath: '/path/to/file' });
-window.crema.invoke('write-file', { filePath: '/path', content: 'data' });
-window.crema.invoke('get-app-path');
-window.crema.on('file-changed', (data) => console.log(data));
+window.krema.invoke('read-file', { filePath: '/path/to/file' });
+window.krema.invoke('write-file', { filePath: '/path', content: 'data' });
+window.krema.invoke('get-app-path');
+window.krema.on('file-changed', (data) => console.log(data));
 ```
 
 ### IPC Pattern Changes
@@ -243,15 +243,15 @@ ipcMain.handle('read-file', async (event, path) => {
 });
 ```
 
-**Crema:**
+**Krema:**
 ```javascript
 // Frontend
-const result = await window.crema.invoke('read-file', { filePath: '/path/to/file' });
+const result = await window.krema.invoke('read-file', { filePath: '/path/to/file' });
 ```
 
 ```java
 // Backend
-@CremaCommand("read-file")
+@KremaCommand("read-file")
 public String readFile(String filePath) throws IOException {
     return Files.readString(Path.of(filePath));
 }
@@ -270,7 +270,7 @@ window.api.onFileChanged((data) => {
 });
 ```
 
-**Crema:**
+**Krema:**
 ```java
 // Backend
 eventEmitter.emit("file-changed", Map.of("path", filePath));
@@ -278,7 +278,7 @@ eventEmitter.emit("file-changed", Map.of("path", filePath));
 
 ```javascript
 // Frontend
-window.crema.on('file-changed', (data) => {
+window.krema.on('file-changed', (data) => {
     console.log('File changed:', data.path);
 });
 ```
@@ -295,13 +295,13 @@ ipcMain.handle('query', (event, sql) => {
 });
 ```
 
-**Crema (using Java libraries):**
+**Krema (using Java libraries):**
 ```java
 // Add to pom.xml: org.xerial:sqlite-jdbc
 
 import java.sql.*;
 
-@CremaCommand("query")
+@KremaCommand("query")
 public List<Map<String, Object>> query(String sql) throws SQLException {
     try (Connection conn = DriverManager.getConnection("jdbc:sqlite:mydb.sqlite");
          Statement stmt = conn.createStatement();
@@ -342,10 +342,10 @@ my-tauri-app/
     └── main.js
 ```
 
-**Crema:**
+**Krema:**
 ```
-my-crema-app/
-├── crema.toml        # Similar to tauri.conf.json
+my-krema-app/
+├── krema.toml        # Similar to tauri.conf.json
 ├── pom.xml           # Similar to Cargo.toml
 ├── src-java/         # Similar to src-tauri
 │   └── com/example/
@@ -381,7 +381,7 @@ my-crema-app/
 }
 ```
 
-**Crema (crema.toml):**
+**Krema (krema.toml):**
 ```toml
 [package]
 name = "my-app"
@@ -432,26 +432,26 @@ fn main() {
 }
 ```
 
-**Crema (Commands.java):**
+**Krema (Commands.java):**
 ```java
-import build.krema.command.CremaCommand;
+import build.krema.command.KremaCommand;
 import java.net.http.*;
 import java.nio.file.*;
 import java.util.concurrent.CompletableFuture;
 
 public class Commands {
 
-    @CremaCommand
+    @KremaCommand
     public String greet(String name) {
         return "Hello, " + name + "!";
     }
 
-    @CremaCommand("read_file")
+    @KremaCommand("read_file")
     public String readFile(String path) throws IOException {
         return Files.readString(Path.of(path));
     }
 
-    @CremaCommand("fetch_data")
+    @KremaCommand("fetch_data")
     public CompletableFuture<String> fetchData(String url) {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -483,18 +483,18 @@ const unlisten = await listen('file-changed', (event) => {
 await emit('user-action', { action: 'click' });
 ```
 
-**Crema:**
+**Krema:**
 ```javascript
 // Invoke command
-const greeting = await window.crema.invoke('greet', { name: 'World' });
+const greeting = await window.krema.invoke('greet', { name: 'World' });
 
 // Listen to events
-const unsubscribe = window.crema.on('file-changed', (payload) => {
+const unsubscribe = window.krema.on('file-changed', (payload) => {
     console.log(payload);
 });
 
-// Note: Frontend-to-backend events use commands in Crema
-await window.crema.invoke('handle-user-action', { action: 'click' });
+// Note: Frontend-to-backend events use commands in Krema
+await window.krema.invoke('handle-user-action', { action: 'click' });
 ```
 
 ### State Management
@@ -513,12 +513,12 @@ fn increment(state: State<AppState>) -> i32 {
 }
 ```
 
-**Crema (using instance fields):**
+**Krema (using instance fields):**
 ```java
 public class Commands {
     private final AtomicInteger counter = new AtomicInteger(0);
 
-    @CremaCommand
+    @KremaCommand
     public int increment() {
         return counter.incrementAndGet();
     }
@@ -537,15 +537,15 @@ const selected = await open({
 });
 ```
 
-**Crema:**
+**Krema:**
 ```javascript
-const selected = await window.crema.invoke('open-file-dialog', {
+const selected = await window.krema.invoke('open-file-dialog', {
     filters: [{ name: 'Text', extensions: ['txt', 'md'] }]
 });
 ```
 
 ```java
-@CremaCommand("open-file-dialog")
+@KremaCommand("open-file-dialog")
 public String openFileDialog(List<FileFilter> filters) {
     return FileDialog.open()
         .filters(filters)
@@ -567,9 +567,9 @@ public String openFileDialog(List<FileFilter> filters) {
 const result = await window.api.heavyComputation(data);
 ```
 
-**Crema Pattern:**
+**Krema Pattern:**
 ```java
-@CremaCommand
+@KremaCommand
 public CompletableFuture<Result> heavyComputation(Data data) {
     return CompletableFuture.supplyAsync(() -> {
         // Runs on separate thread
@@ -591,9 +591,9 @@ ipcMain.on('start-task', (event) => {
 });
 ```
 
-**Crema:**
+**Krema:**
 ```java
-@CremaCommand("start-task")
+@KremaCommand("start-task")
 public void startTask() {
     CompletableFuture.runAsync(() -> {
         for (int i = 0; i <= 100; i += 10) {
@@ -617,10 +617,10 @@ ipcMain.handle('risky-operation', async () => {
 });
 ```
 
-**Crema:**
+**Krema:**
 ```java
 // Exceptions are automatically converted to error responses
-@CremaCommand
+@KremaCommand
 public Data riskyOperation() throws MyException {
     return doSomething(); // Throws? Returns { error: "message" }
 }
@@ -630,9 +630,9 @@ public Data riskyOperation() throws MyException {
 
 ## API Mapping
 
-### Electron → Crema
+### Electron → Krema
 
-| Electron API | Crema Equivalent |
+| Electron API | Krema Equivalent |
 |--------------|------------------|
 | `app.getPath('userData')` | `AppPaths.dataDir(appName)` |
 | `app.getPath('home')` | `AppPaths.homeDir()` |
@@ -645,18 +645,18 @@ public Data riskyOperation() throws MyException {
 | `dialog.showSaveDialog()` | `FileDialog.save().show()` |
 | `Notification` | `Notification.show(title, body)` |
 | `Tray` | `SystemTray.create()` |
-| `BrowserWindow` | `Crema.app()` / `WindowManager` |
+| `BrowserWindow` | `Krema.app()` / `WindowManager` |
 
-### Tauri → Crema
+### Tauri → Krema
 
-| Tauri API | Crema Equivalent |
+| Tauri API | Krema Equivalent |
 |-----------|------------------|
-| `#[tauri::command]` | `@CremaCommand` |
-| `tauri::Builder` | `Crema.app()` |
+| `#[tauri::command]` | `@KremaCommand` |
+| `tauri::Builder` | `Krema.app()` |
 | `State<T>` | Instance fields on Commands class |
 | `AppHandle` | `PluginContext` (in plugins) |
-| `@tauri-apps/api/tauri.invoke` | `window.crema.invoke` |
-| `@tauri-apps/api/event.listen` | `window.crema.on` |
+| `@tauri-apps/api/tauri.invoke` | `window.krema.invoke` |
+| `@tauri-apps/api/event.listen` | `window.krema.on` |
 | `@tauri-apps/api/event.emit` | Use command to send to backend |
 | `@tauri-apps/api/dialog` | `FileDialog` via command |
 | `@tauri-apps/api/clipboard` | `Clipboard` via command |
@@ -670,24 +670,24 @@ public Data riskyOperation() throws MyException {
 
 ### Build Commands
 
-| Task | Electron | Tauri | Crema |
+| Task | Electron | Tauri | Krema |
 |------|----------|-------|-------|
-| Dev mode | `electron .` | `tauri dev` | `crema dev` |
-| Build | `electron-builder` | `tauri build` | `crema build` |
-| Bundle | (in electron-builder) | (in tauri build) | `crema bundle` |
+| Dev mode | `electron .` | `tauri dev` | `krema dev` |
+| Build | `electron-builder` | `tauri build` | `krema build` |
+| Bundle | (in electron-builder) | (in tauri build) | `krema bundle` |
 
 ### Configuration Files
 
-| Aspect | Electron | Tauri | Crema |
+| Aspect | Electron | Tauri | Krema |
 |--------|----------|-------|-------|
-| App config | `package.json` | `tauri.conf.json` | `crema.toml` |
-| Build config | `electron-builder.json` | `tauri.conf.json` | `crema.toml` |
+| App config | `package.json` | `tauri.conf.json` | `krema.toml` |
+| Build config | `electron-builder.json` | `tauri.conf.json` | `krema.toml` |
 | Backend deps | `package.json` | `Cargo.toml` | `pom.xml` |
 | Frontend deps | `package.json` | `package.json` | `package.json` |
 
 ### Bundle Sizes (Approximate)
 
-| App Type | Electron | Tauri | Crema |
+| App Type | Electron | Tauri | Krema |
 |----------|----------|-------|-------|
 | Hello World | ~150MB | ~5MB | ~50MB |
 | Medium App | ~180MB | ~10MB | ~60MB |
@@ -699,24 +699,24 @@ public Data riskyOperation() throws MyException {
 
 ### From Electron
 
-- [ ] Create `crema.toml` from `package.json` + `electron-builder.json`
-- [ ] Create `pom.xml` with Crema dependency
+- [ ] Create `krema.toml` from `package.json` + `electron-builder.json`
+- [ ] Create `pom.xml` with Krema dependency
 - [ ] Port `main.js` to `Main.java`
-- [ ] Convert `ipcMain.handle()` to `@CremaCommand` methods
-- [ ] Remove `preload.js` (Crema bridge is automatic)
-- [ ] Update frontend to use `window.crema.invoke()`
-- [ ] Replace `ipcRenderer.on()` with `window.crema.on()`
+- [ ] Convert `ipcMain.handle()` to `@KremaCommand` methods
+- [ ] Remove `preload.js` (Krema bridge is automatic)
+- [ ] Update frontend to use `window.krema.invoke()`
+- [ ] Replace `ipcRenderer.on()` with `window.krema.on()`
 - [ ] Port native Node modules to Java libraries
 - [ ] Update build scripts
 
 ### From Tauri
 
-- [ ] Convert `tauri.conf.json` to `crema.toml`
+- [ ] Convert `tauri.conf.json` to `krema.toml`
 - [ ] Convert `Cargo.toml` to `pom.xml`
-- [ ] Port `main.rs` commands to Java `@CremaCommand`
+- [ ] Port `main.rs` commands to Java `@KremaCommand`
 - [ ] Update frontend imports (remove `@tauri-apps/api`)
-- [ ] Replace `invoke()` with `window.crema.invoke()`
-- [ ] Replace `listen()` with `window.crema.on()`
+- [ ] Replace `invoke()` with `window.krema.invoke()`
+- [ ] Replace `listen()` with `window.krema.on()`
 - [ ] Port Rust libraries to Java equivalents
 - [ ] Update build scripts
 
@@ -724,8 +724,8 @@ public Data riskyOperation() throws MyException {
 
 ## Getting Help
 
-- [User Guide](./guide.md) - Complete Crema documentation
-- [Plugin Guide](./plugins.md) - Extend Crema with plugins
+- [User Guide](./guide.md) - Complete Krema documentation
+- [Plugin Guide](./plugins.md) - Extend Krema with plugins
 - [API Reference](./api.md) - Detailed API documentation
 - [GitHub Issues](https://github.com/krema-build/krema/issues) - Report bugs or request features
 - [Discussions](https://github.com/krema-build/krema/discussions) - Ask questions

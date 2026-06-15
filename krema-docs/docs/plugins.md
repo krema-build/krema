@@ -1,6 +1,6 @@
-# Crema Plugin Development Guide
+# Krema Plugin Development Guide
 
-Learn how to extend Crema with custom plugins.
+Learn how to extend Krema with custom plugins.
 
 ---
 
@@ -22,7 +22,7 @@ Learn how to extend Crema with custom plugins.
 
 ## Overview
 
-Crema plugins allow you to:
+Krema plugins allow you to:
 - Add new backend commands
 - Integrate with external services
 - Provide reusable functionality
@@ -41,7 +41,7 @@ Crema plugins allow you to:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                 Crema Application               │
+│                 Krema Application               │
 ├─────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────┐ │
 │  │   Plugin A  │  │   Plugin B  │  │  ...    │ │
@@ -91,7 +91,7 @@ my-plugin/
 ├── src/main/resources/
 │   ├── plugin.json
 │   └── META-INF/services/
-│       └── build.krema.plugin.CremaPlugin
+│       └── build.krema.plugin.KremaPlugin
 └── README.md
 ```
 
@@ -106,21 +106,21 @@ my-plugin/
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>crema-plugin-example</artifactId>
+    <artifactId>krema-plugin-example</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.source>20</maven.compiler.source>
         <maven.compiler.target>20</maven.compiler.target>
-        <crema.version>0.1.0</crema.version>
+        <krema.version>0.1.0</krema.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>build.krema</groupId>
-            <artifactId>crema</artifactId>
-            <version>${crema.version}</version>
+            <artifactId>krema</artifactId>
+            <version>${krema.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -150,12 +150,12 @@ my-plugin/
 ```java
 package com.example.myplugin;
 
-import build.krema.plugin.CremaPlugin;
+import build.krema.plugin.KremaPlugin;
 import build.krema.plugin.PluginContext;
 
 import java.util.List;
 
-public class MyPlugin implements CremaPlugin {
+public class MyPlugin implements KremaPlugin {
 
     private PluginContext context;
     private MyCommands commands;
@@ -193,7 +193,7 @@ public class MyPlugin implements CremaPlugin {
 
 ### ServiceLoader Registration
 
-Create file `src/main/resources/META-INF/services/build.krema.plugin.CremaPlugin`:
+Create file `src/main/resources/META-INF/services/build.krema.plugin.KremaPlugin`:
 
 ```
 com.example.myplugin.MyPlugin
@@ -209,7 +209,7 @@ com.example.myplugin.MyPlugin
 {
     "name": "my-plugin",
     "version": "1.0.0",
-    "description": "An example Crema plugin",
+    "description": "An example Krema plugin",
     "author": "Your Name",
     "homepage": "https://github.com/example/my-plugin",
     "main": "com.example.myplugin.MyPlugin",
@@ -218,7 +218,7 @@ com.example.myplugin.MyPlugin
         "notification"
     ],
     "dependencies": [],
-    "cremaVersion": ">=0.1.0"
+    "kremaVersion": ">=0.1.0"
 }
 ```
 
@@ -234,13 +234,13 @@ com.example.myplugin.MyPlugin
 | `main` | Yes | Fully qualified class name |
 | `permissions` | No | Required permissions |
 | `dependencies` | No | Other plugins this depends on |
-| `cremaVersion` | No | Compatible Crema versions |
+| `kremaVersion` | No | Compatible Krema versions |
 
 ---
 
 ## Plugin Context
 
-The `PluginContext` provides access to Crema internals:
+The `PluginContext` provides access to Krema internals:
 
 ```java
 public interface PluginContext {
@@ -285,7 +285,7 @@ public interface PluginContext {
 ### Using PluginContext
 
 ```java
-public class MyPlugin implements CremaPlugin {
+public class MyPlugin implements KremaPlugin {
 
     private PluginContext context;
 
@@ -302,7 +302,7 @@ public class MyPlugin implements CremaPlugin {
 
         // Access data directory
         Path dataDir = context.getDataDir();
-        // ~/.crema/plugins/my-plugin/data/
+        // ~/.krema/plugins/my-plugin/data/
 
         // Load configuration
         MyPluginConfig config = context.getConfig(MyPluginConfig.class);
@@ -314,12 +314,12 @@ public class MyPlugin implements CremaPlugin {
 
 ## Adding Commands
 
-### Using @CremaCommand
+### Using @KremaCommand
 
 ```java
 package com.example.myplugin;
 
-import build.krema.command.CremaCommand;
+import build.krema.command.KremaCommand;
 import build.krema.plugin.PluginContext;
 
 public class MyCommands {
@@ -330,18 +330,18 @@ public class MyCommands {
         this.context = context;
     }
 
-    @CremaCommand("my-plugin:greet")
+    @KremaCommand("my-plugin:greet")
     public String greet(String name) {
         context.getLogger().debug("Greeting: " + name);
         return "Hello from MyPlugin, " + name + "!";
     }
 
-    @CremaCommand("my-plugin:getData")
+    @KremaCommand("my-plugin:getData")
     public MyData getData(String id) {
         return new MyData(id, "Sample data");
     }
 
-    @CremaCommand("my-plugin:process")
+    @KremaCommand("my-plugin:process")
     public CompletableFuture<ProcessResult> processAsync(ProcessRequest request) {
         return CompletableFuture.supplyAsync(() -> {
             // Long-running operation
@@ -402,7 +402,7 @@ public class MyCommands {
         this.events = context.getEventEmitter();
     }
 
-    @CremaCommand("my-plugin:startProcess")
+    @KremaCommand("my-plugin:startProcess")
     public void startProcess(String jobId) {
         // Emit start event
         events.emit("my-plugin:process:started", Map.of("jobId", jobId));
@@ -445,16 +445,16 @@ public void initialize(PluginContext context) {
 
 ```javascript
 // Listen for plugin events
-window.crema.on('my-plugin:process:started', (data) => {
+window.krema.on('my-plugin:process:started', (data) => {
     console.log('Process started:', data.jobId);
     showProgressDialog();
 });
 
-window.crema.on('my-plugin:process:progress', (data) => {
+window.krema.on('my-plugin:process:progress', (data) => {
     updateProgress(data.percent);
 });
 
-window.crema.on('my-plugin:process:completed', (data) => {
+window.krema.on('my-plugin:process:completed', (data) => {
     hideProgressDialog();
     showResult(data.result);
 });
@@ -466,7 +466,7 @@ window.crema.on('my-plugin:process:completed', (data) => {
 
 ### Plugin Configuration File
 
-Users can configure plugins in `crema.toml`:
+Users can configure plugins in `krema.toml`:
 
 ```toml
 [plugins.my-plugin]
@@ -550,13 +550,13 @@ import build.krema.security.Permission;
 
 public class FileCommands {
 
-    @CremaCommand("my-plugin:readConfig")
+    @KremaCommand("my-plugin:readConfig")
     @RequiresPermission(Permission.FS_READ)
     public String readConfig(String path) {
         return Files.readString(Path.of(path));
     }
 
-    @CremaCommand("my-plugin:saveConfig")
+    @KremaCommand("my-plugin:saveConfig")
     @RequiresPermission({Permission.FS_READ, Permission.FS_WRITE})
     public void saveConfig(String path, String content) {
         Files.writeString(Path.of(path), content);
@@ -669,12 +669,12 @@ class MyCommandsTest {
 class MyPluginIntegrationTest {
 
     @Test
-    void shouldWorkWithRealCremaApp() throws Exception {
+    void shouldWorkWithRealKremaApp() throws Exception {
         // Create test app with plugin
         CountDownLatch ready = new CountDownLatch(1);
 
         Thread appThread = new Thread(() -> {
-            Crema.app()
+            Krema.app()
                 .html("<html><body>Test</body></html>")
                 .plugins(new MyPlugin())
                 .events(e -> ready.countDown())
@@ -699,7 +699,7 @@ class MyPluginIntegrationTest {
 mvn clean package
 ```
 
-This creates `target/crema-plugin-example-1.0.0.jar`.
+This creates `target/krema-plugin-example-1.0.0.jar`.
 
 ### Installation Locations
 
@@ -707,7 +707,7 @@ Plugins can be installed in:
 
 1. **Application plugins directory:**
    ```
-   ~/.crema/plugins/my-plugin.jar
+   ~/.krema/plugins/my-plugin.jar
    ```
 
 2. **Project-local plugins:**
@@ -722,13 +722,13 @@ Plugins can be installed in:
 
 ```bash
 # Install from repository (future feature)
-crema plugin install my-plugin
+krema plugin install my-plugin
 
 # List installed plugins
-crema plugin list
+krema plugin list
 
 # Remove plugin
-crema plugin remove my-plugin
+krema plugin remove my-plugin
 ```
 
 ### Publishing Checklist
@@ -751,7 +751,7 @@ Before publishing your plugin:
 ### Database Plugin
 
 ```java
-public class DatabasePlugin implements CremaPlugin {
+public class DatabasePlugin implements KremaPlugin {
 
     private DataSource dataSource;
 
@@ -790,7 +790,7 @@ public class DatabasePlugin implements CremaPlugin {
 ### Analytics Plugin
 
 ```java
-public class AnalyticsPlugin implements CremaPlugin {
+public class AnalyticsPlugin implements KremaPlugin {
 
     private AnalyticsClient client;
     private EventEmitter events;
@@ -829,7 +829,7 @@ public class AnalyticsPlugin implements CremaPlugin {
 
 ### Don't
 
-- Access internal Crema APIs directly
+- Access internal Krema APIs directly
 - Store state in static fields
 - Block the main thread
 - Catch and swallow exceptions
@@ -844,13 +844,13 @@ public class AnalyticsPlugin implements CremaPlugin {
 
 ```bash
 # Check plugin is in correct location
-ls ~/.crema/plugins/
+ls ~/.krema/plugins/
 
 # Check plugin.json is valid
 cat my-plugin.jar | jar -xf - plugin.json
 
 # Enable debug logging
-export CREMA_LOG_LEVEL=DEBUG
+export KREMA_LOG_LEVEL=DEBUG
 ```
 
 ### Commands Not Found
@@ -866,7 +866,7 @@ public List<Object> getCommandHandlers() {
 ### Permission Errors
 
 ```toml
-# Add plugin permissions to crema.toml
+# Add plugin permissions to krema.toml
 [permissions]
 allow = [
     "fs:read",   # Add permissions required by plugin
@@ -878,6 +878,6 @@ allow = [
 
 ## Next Steps
 
-- [User Guide](./guide.md) - General Crema usage
+- [User Guide](./guide.md) - General Krema usage
 - [API Reference](./api.md) - Complete API documentation
 - [Example Plugins](https://github.com/krema-build/krema/tree/main/plugins) - Reference implementations

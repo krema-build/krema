@@ -1,12 +1,12 @@
 # Auto-Updater Guide
 
-This guide covers how to set up automatic updates for your Crema application, including key generation, update server configuration, and frontend integration.
+This guide covers how to set up automatic updates for your Krema application, including key generation, update server configuration, and frontend integration.
 
 ---
 
 ## Overview
 
-The Crema auto-updater provides:
+The Krema auto-updater provides:
 
 - **Ed25519 signature verification** for secure updates
 - **Multi-platform manifest** format (Tauri-compatible) or simple single-URL format
@@ -21,12 +21,12 @@ The Crema auto-updater provides:
 ### 1. Generate a signing keypair
 
 ```bash
-crema signer generate
+krema signer generate
 ```
 
-This creates a `crema-private.key` file and prints the public key to add to your config.
+This creates a `krema-private.key` file and prints the public key to add to your config.
 
-### 2. Configure `crema.toml`
+### 2. Configure `krema.toml`
 
 ```toml
 [updater]
@@ -37,38 +37,38 @@ endpoints = ["https://releases.example.com/{{target}}/{{current_version}}"]
 ### 3. Use the frontend API
 
 ```typescript
-const result = await crema.updater.check();
+const result = await krema.updater.check();
 if (result.updateAvailable) {
-  await crema.updater.download();
-  await crema.updater.installAndRestart();
+  await krema.updater.download();
+  await krema.updater.installAndRestart();
 }
 ```
 
 ### 4. Sign your builds
 
 ```bash
-export CREMA_SIGNING_PRIVATE_KEY="$(cat crema-private.key)"
-crema bundle --type dmg
+export KREMA_SIGNING_PRIVATE_KEY="$(cat krema-private.key)"
+krema bundle --type dmg
 ```
 
 ---
 
 ## Key Generation
 
-Use the `crema signer` CLI to generate an Ed25519 keypair:
+Use the `krema signer` CLI to generate an Ed25519 keypair:
 
 ```bash
-crema signer generate
+krema signer generate
 ```
 
 Output:
 
 ```
-[Crema Signer] Ed25519 keypair generated successfully!
+[Krema Signer] Ed25519 keypair generated successfully!
 
-Private key written to: /path/to/crema-private.key
+Private key written to: /path/to/krema-private.key
 
-Add this to your crema.toml:
+Add this to your krema.toml:
 
 [updater]
 pubkey = "MCowBQYDK2VwAyEA..."
@@ -76,24 +76,24 @@ pubkey = "MCowBQYDK2VwAyEA..."
 WARNING: Keep your private key secure!
   - Do NOT commit it to version control
   - Store it in a secure location or CI secret
-  - Set CREMA_SIGNING_PRIVATE_KEY env var for CI builds
+  - Set KREMA_SIGNING_PRIVATE_KEY env var for CI builds
 ```
 
 To write the private key to a custom location:
 
 ```bash
-crema signer generate --output /path/to/my-key.pem
+krema signer generate --output /path/to/my-key.pem
 ```
 
 ### Signing files manually
 
 ```bash
 # Using a key file
-crema signer sign target/bundle/macos/MyApp.dmg --key crema-private.key
+krema signer sign target/bundle/macos/MyApp.dmg --key krema-private.key
 
 # Using the environment variable
-export CREMA_SIGNING_PRIVATE_KEY="$(cat crema-private.key)"
-crema signer sign target/bundle/macos/MyApp.dmg
+export KREMA_SIGNING_PRIVATE_KEY="$(cat krema-private.key)"
+krema signer sign target/bundle/macos/MyApp.dmg
 ```
 
 This creates a `.sig` file alongside the artifact (e.g. `MyApp.dmg.sig`).
@@ -102,7 +102,7 @@ This creates a `.sig` file alongside the artifact (e.g. `MyApp.dmg.sig`).
 
 ## Configuration
 
-Add an `[updater]` section to your `crema.toml`:
+Add an `[updater]` section to your `krema.toml`:
 
 ```toml
 [updater]
@@ -241,7 +241,7 @@ The updater exposes four commands and several events to the frontend.
 Checks for an available update.
 
 ```typescript
-const result = await crema.updater.check();
+const result = await krema.updater.check();
 // result: { updateAvailable, version, notes, date, mandatory, size }
 
 if (result.updateAvailable) {
@@ -256,7 +256,7 @@ Returns `{ updateAvailable: false }` when no update is available or the updater 
 Downloads the available update. Emits `updater:download-progress` events during download.
 
 ```typescript
-const result = await crema.updater.download();
+const result = await krema.updater.download();
 // result: { downloaded, path }
 
 if (result.downloaded) {
@@ -269,7 +269,7 @@ if (result.downloaded) {
 Installs a previously downloaded update without restarting.
 
 ```typescript
-await crema.updater.install();
+await krema.updater.install();
 ```
 
 #### `updater:installAndRestart`
@@ -277,38 +277,38 @@ await crema.updater.install();
 Installs the update and restarts the application. Emits `updater:before-restart` before restarting to let your app save state.
 
 ```typescript
-await crema.updater.installAndRestart();
+await krema.updater.installAndRestart();
 ```
 
 ### Events
 
-Listen for events using `crema.on()`:
+Listen for events using `krema.on()`:
 
 ```typescript
 // Update available (also emitted during check if update found)
-crema.on<crema.updater.UpdateAvailableEvent>('updater:update-available', (data) => {
+krema.on<krema.updater.UpdateAvailableEvent>('updater:update-available', (data) => {
   console.log(`Update ${data.version} available`);
   console.log(`Notes: ${data.notes}`);
   console.log(`Mandatory: ${data.mandatory}`);
 });
 
 // Download progress (0.0 to 1.0)
-crema.on<crema.updater.DownloadProgressEvent>('updater:download-progress', (data) => {
+krema.on<krema.updater.DownloadProgressEvent>('updater:download-progress', (data) => {
   progressBar.value = data.progress * 100;
 });
 
 // Download complete, ready to install
-crema.on<crema.updater.UpdateReadyEvent>('updater:update-ready', (data) => {
+krema.on<krema.updater.UpdateReadyEvent>('updater:update-ready', (data) => {
   showInstallButton();
 });
 
 // Error occurred
-crema.on<crema.updater.UpdateErrorEvent>('updater:error', (data) => {
+krema.on<krema.updater.UpdateErrorEvent>('updater:error', (data) => {
   console.error('Update error:', data.message);
 });
 
 // About to restart (save state here)
-crema.on('updater:before-restart', () => {
+krema.on('updater:before-restart', () => {
   saveAppState();
 });
 ```
@@ -318,7 +318,7 @@ crema.on('updater:before-restart', () => {
 ```typescript
 async function checkForUpdates() {
   try {
-    const result = await crema.updater.check();
+    const result = await krema.updater.check();
     if (!result.updateAvailable) {
       showNotification('You are up to date!');
       return;
@@ -330,20 +330,20 @@ async function checkForUpdates() {
     if (!userConfirmed) return;
 
     // Listen for progress
-    const unsub = crema.on('updater:download-progress', (data) => {
+    const unsub = krema.on('updater:download-progress', (data) => {
       updateProgressBar(data.progress);
     });
 
-    await crema.updater.download();
+    await krema.updater.download();
     unsub(); // stop listening
 
     // Ask user to restart
     const restartNow = await showRestartDialog();
     if (restartNow) {
-      await crema.updater.installAndRestart();
+      await krema.updater.installAndRestart();
     } else {
       // Install will happen next time the app starts
-      await crema.updater.install();
+      await krema.updater.install();
     }
   } catch (err) {
     console.error('Update failed:', err);
@@ -355,11 +355,11 @@ async function checkForUpdates() {
 
 ## Build-Time Signing
 
-When the `CREMA_SIGNING_PRIVATE_KEY` environment variable is set, `crema bundle` automatically signs the output artifact and creates a `.sig` file alongside it.
+When the `KREMA_SIGNING_PRIVATE_KEY` environment variable is set, `krema bundle` automatically signs the output artifact and creates a `.sig` file alongside it.
 
 ```bash
-export CREMA_SIGNING_PRIVATE_KEY="$(cat crema-private.key)"
-crema bundle --type dmg
+export KREMA_SIGNING_PRIVATE_KEY="$(cat krema-private.key)"
+krema bundle --type dmg
 ```
 
 This produces:
@@ -376,8 +376,8 @@ Upload both files to your update server and include the signature in the manifes
 ```yaml
 - name: Bundle and sign
   env:
-    CREMA_SIGNING_PRIVATE_KEY: ${{ secrets.CREMA_SIGNING_PRIVATE_KEY }}
-  run: crema bundle --type dmg
+    KREMA_SIGNING_PRIVATE_KEY: ${{ secrets.KREMA_SIGNING_PRIVATE_KEY }}
+  run: krema bundle --type dmg
 
 - name: Upload release artifacts
   uses: softprops/action-gh-release@v1
@@ -443,7 +443,7 @@ It is strongly recommended to always configure a public key for production apps.
 
 ## No-Op Behavior
 
-If no `[updater]` section is present in `crema.toml`, or if `endpoints` is empty:
+If no `[updater]` section is present in `krema.toml`, or if `endpoints` is empty:
 
 - The `UpdaterPlugin` initializes but is inactive
 - `updater:check` returns `{ updateAvailable: false }`
@@ -461,7 +461,7 @@ The `endpoints` array in your `[updater]` config is missing or empty. Add at lea
 ### "Update signature is missing but public key is configured"
 
 Your update manifest does not include a `signature` field, but your app has a `pubkey` configured. Either:
-- Sign your artifacts with `crema signer sign` and include the signature in the manifest
+- Sign your artifacts with `krema signer sign` and include the signature in the manifest
 - Remove the `pubkey` from your config (not recommended for production)
 
 ### "Update signature verification failed"
@@ -469,7 +469,7 @@ Your update manifest does not include a `signature` field, but your app has a `p
 The signature doesn't match the downloaded file. This could mean:
 - The file was corrupted during download
 - The file was tampered with
-- You're using the wrong public key (regenerate with `crema signer generate`)
+- You're using the wrong public key (regenerate with `krema signer generate`)
 - The signature was generated with a different private key
 
 ### "No .app bundle found" (macOS)
@@ -495,7 +495,7 @@ export APPIMAGE=/path/to/MyApp.AppImage
 ```toml
 [updater]
 # Base64-encoded Ed25519 public key.
-# Generated by: crema signer generate
+# Generated by: krema signer generate
 # Required for signature verification. Omit to skip verification (not recommended).
 pubkey = "MCowBQYDK2VwAyEA..."
 

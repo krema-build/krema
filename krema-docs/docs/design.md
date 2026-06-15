@@ -1,8 +1,8 @@
-# Crema Technical Design Document
+# Krema Technical Design Document
 
 ## Overview
 
-Crema is a lightweight desktop application framework that uses system webviews for rendering, similar to Tauri. This document describes the technical architecture and design decisions.
+Krema is a lightweight desktop application framework that uses system webviews for rendering, similar to Tauri. This document describes the technical architecture and design decisions.
 
 ---
 
@@ -12,7 +12,7 @@ Crema is a lightweight desktop application framework that uses system webviews f
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         Crema Application                        │
+│                         Krema Application                        │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │  │   Frontend      │  │    IPC Layer    │  │    Backend      │ │
@@ -35,9 +35,9 @@ Crema is a lightweight desktop application framework that uses system webviews f
 ```
 build.krema/
 ├── core/                      # Core framework
-│   ├── Crema.java             # Main entry point, builder API
-│   ├── CremaWindow.java       # High-level window abstraction
-│   └── CremaConfig.java       # Configuration model
+│   ├── Krema.java             # Main entry point, builder API
+│   ├── KremaWindow.java       # High-level window abstraction
+│   └── KremaConfig.java       # Configuration model
 ├── platform/                  # Platform abstraction
 │   ├── Platform.java          # Platform enum
 │   ├── PlatformDetector.java  # OS detection
@@ -56,11 +56,11 @@ build.krema/
 │   ├── IpcRequest.java        # Request model
 │   └── IpcResponse.java       # Response model
 ├── command/                   # Command system
-│   ├── CremaCommand.java      # Annotation
+│   ├── KremaCommand.java      # Annotation
 │   ├── CommandRegistry.java   # Registry
 │   └── RequiresPermission.java
 ├── event/                     # Event system
-│   ├── CremaEvent.java        # Event interface
+│   ├── KremaEvent.java        # Event interface
 │   ├── EventEmitter.java      # Emitter
 │   └── EventListener.java     # Listener
 ├── api/                       # Native APIs
@@ -71,7 +71,7 @@ build.krema/
 │   ├── shell/                 # Shell commands
 │   └── path/                  # Path utilities
 ├── plugin/                    # Plugin system
-│   ├── CremaPlugin.java       # Interface
+│   ├── KremaPlugin.java       # Interface
 │   ├── PluginContext.java
 │   ├── PluginLoader.java
 │   └── PluginManifest.java
@@ -82,7 +82,7 @@ build.krema/
 ├── server/                    # Asset server
 │   └── AssetServer.java
 ├── cli/                       # CLI tools
-│   ├── CremaCliMain.java
+│   ├── KremaCliMain.java
 │   ├── InitCommand.java
 │   ├── DevCommand.java
 │   ├── BuildCommand.java
@@ -172,7 +172,7 @@ public class NativeLibraryLoader {
         try (InputStream is = NativeLibraryLoader.class.getResourceAsStream(resourcePath)) {
             if (is == null) return null;
 
-            Path tempDir = Files.createTempDirectory("crema-native");
+            Path tempDir = Files.createTempDirectory("krema-native");
             Path libPath = tempDir.resolve(platform.formatLibraryName(libraryName));
             Files.copy(is, libPath);
             libPath.toFile().deleteOnExit();
@@ -251,7 +251,7 @@ public record WindowOptions(
     }
 
     public static class Builder {
-        private String title = "Crema App";
+        private String title = "Krema App";
         private int width = 1024;
         private int height = 768;
         private int minWidth = 0;
@@ -289,7 +289,7 @@ public record WindowOptions(
 ### Event System
 
 ```java
-public interface CremaEvent {
+public interface KremaEvent {
     String name();
     Object payload();
     long timestamp();
@@ -310,7 +310,7 @@ public class EventEmitter {
                 "payload", payload,
                 "timestamp", System.currentTimeMillis()
             ));
-            engine.eval("window.__crema_event && window.__crema_event(" + json + ")");
+            engine.eval("window.__krema_event && window.__krema_event(" + json + ")");
         } catch (Exception e) {
             // Log error
         }
@@ -318,36 +318,36 @@ public class EventEmitter {
 }
 ```
 
-**JavaScript side (crema-bridge.js):**
+**JavaScript side (krema-bridge.js):**
 
 ```javascript
-window.crema = window.crema || {};
+window.krema = window.krema || {};
 
 const listeners = new Map();
 
-window.crema.on = function(event, callback) {
+window.krema.on = function(event, callback) {
     if (!listeners.has(event)) {
         listeners.set(event, new Set());
     }
     listeners.get(event).add(callback);
-    return () => window.crema.off(event, callback);
+    return () => window.krema.off(event, callback);
 };
 
-window.crema.off = function(event, callback) {
+window.krema.off = function(event, callback) {
     if (listeners.has(event)) {
         listeners.get(event).delete(callback);
     }
 };
 
-window.crema.once = function(event, callback) {
+window.krema.once = function(event, callback) {
     const wrapper = (data) => {
-        window.crema.off(event, wrapper);
+        window.krema.off(event, wrapper);
         callback(data);
     };
-    return window.crema.on(event, wrapper);
+    return window.krema.on(event, wrapper);
 };
 
-window.__crema_event = function(event) {
+window.__krema_event = function(event) {
     const eventListeners = listeners.get(event.name);
     if (eventListeners) {
         eventListeners.forEach(cb => {
@@ -404,7 +404,7 @@ window.__crema_event = function(event) {
      │ invoke(cmd, args)   │                     │
      │────────────────────>│                     │
      │                     │                     │
-     │                     │ __crema_invoke(seq, json)
+     │                     │ __krema_invoke(seq, json)
      │                     │────────────────────>│
      │                     │                     │
      │                     │    invoke command   │
@@ -424,7 +424,7 @@ window.__crema_event = function(event) {
 ### Plugin Interface
 
 ```java
-public interface CremaPlugin {
+public interface KremaPlugin {
     String getName();
     String getVersion();
 
@@ -459,11 +459,11 @@ public interface PluginContext {
 
 ```java
 public class PluginLoader {
-    private final List<CremaPlugin> plugins = new ArrayList<>();
+    private final List<KremaPlugin> plugins = new ArrayList<>();
 
     public void loadBuiltinPlugins() {
-        ServiceLoader<CremaPlugin> loader = ServiceLoader.load(CremaPlugin.class);
-        for (CremaPlugin plugin : loader) {
+        ServiceLoader<KremaPlugin> loader = ServiceLoader.load(KremaPlugin.class);
+        for (KremaPlugin plugin : loader) {
             plugins.add(plugin);
         }
     }
@@ -480,13 +480,13 @@ public class PluginLoader {
 
         // Load plugin class
         Class<?> pluginClass = classLoader.loadClass(manifest.main());
-        CremaPlugin plugin = (CremaPlugin) pluginClass.getDeclaredConstructor().newInstance();
+        KremaPlugin plugin = (KremaPlugin) pluginClass.getDeclaredConstructor().newInstance();
 
         plugins.add(plugin);
     }
 
     public void initializeAll(PluginContext context) {
-        for (CremaPlugin plugin : plugins) {
+        for (KremaPlugin plugin : plugins) {
             plugin.initialize(context);
         }
     }
@@ -578,14 +578,14 @@ public class PermissionChecker {
 
 ## Configuration Schema
 
-### crema.toml
+### krema.toml
 
 ```toml
 [package]
 name = "my-app"
 version = "1.0.0"
 identifier = "com.example.myapp"
-description = "My Crema Application"
+description = "My Krema Application"
 
 [window]
 title = "My App"
@@ -624,16 +624,16 @@ allow = [
 ### Configuration Class
 
 ```java
-public record CremaConfig(
+public record KremaConfig(
     PackageConfig packageConfig,
     WindowConfig window,
     BuildConfig build,
     BundleConfig bundle,
     PermissionsConfig permissions
 ) {
-    public static CremaConfig load(Path path) throws IOException {
+    public static KremaConfig load(Path path) throws IOException {
         Toml toml = new Toml().read(path.toFile());
-        return toml.to(CremaConfig.class);
+        return toml.to(KremaConfig.class);
     }
 
     public record PackageConfig(
@@ -687,7 +687,7 @@ public record CremaConfig(
 
 ```java
 @Command(
-    name = "crema",
+    name = "krema",
     mixinStandardHelpOptions = true,
     version = "0.1.0",
     subcommands = {
@@ -697,9 +697,9 @@ public record CremaConfig(
         BundleCommand.class
     }
 )
-public class CremaCliMain implements Callable<Integer> {
+public class KremaCliMain implements Callable<Integer> {
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new CremaCliMain()).execute(args);
+        int exitCode = new CommandLine(new KremaCliMain()).execute(args);
         System.exit(exitCode);
     }
 
@@ -714,7 +714,7 @@ public class CremaCliMain implements Callable<Integer> {
 ### Init Command
 
 ```java
-@Command(name = "init", description = "Create a new Crema project")
+@Command(name = "init", description = "Create a new Krema project")
 public class InitCommand implements Callable<Integer> {
 
     @Parameters(index = "0", description = "Project name")
@@ -734,7 +734,7 @@ public class InitCommand implements Callable<Integer> {
         // Copy template files
         copyTemplate(template, projectDir);
 
-        // Generate crema.toml
+        // Generate krema.toml
         generateConfig(projectDir, projectName);
 
         System.out.println("Created project: " + projectName);
@@ -751,7 +751,7 @@ public class DevCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        CremaConfig config = CremaConfig.load(Path.of("crema.toml"));
+        KremaConfig config = KremaConfig.load(Path.of("krema.toml"));
 
         // Start frontend dev server
         Process frontendProcess = startFrontendDevServer(config);
@@ -759,8 +759,8 @@ public class DevCommand implements Callable<Integer> {
         // Wait for dev server to be ready
         waitForServer(config.build().frontendDevUrl());
 
-        // Start Crema window
-        Crema.app()
+        // Start Krema window
+        Krema.app()
             .title(config.window().title())
             .size(config.window().width(), config.window().height())
             .devUrl(config.build().frontendDevUrl())
@@ -852,7 +852,7 @@ class CommandRegistryTest {
     }
 
     static class TestCommands {
-        @CremaCommand
+        @KremaCommand
         public String greet(String name) {
             return "Hello, " + name + "!";
         }
@@ -867,7 +867,7 @@ class WindowIntegrationTest {
     @Test
     @EnabledOnOs(OS.MAC)
     void shouldCreateAndDestroyWindow() {
-        try (CremaWindow window = new CremaWindow(false)) {
+        try (KremaWindow window = new KremaWindow(false)) {
             assertNotNull(window.getHandle());
             window.title("Test Window");
             window.size(800, 600);
@@ -894,6 +894,6 @@ class WindowIntegrationTest {
 
 1. **GraalVM Native Image**: Investigate for faster startup and smaller bundles
 2. **Multi-window support**: Already designed for, needs implementation
-3. **Custom protocols**: `crema://` URL scheme for asset loading
+3. **Custom protocols**: `krema://` URL scheme for asset loading
 4. **WebGL/GPU acceleration**: Ensure hardware acceleration is enabled
 5. **Accessibility**: Implement accessibility APIs for screen readers

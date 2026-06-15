@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -33,6 +34,8 @@ public class IpcHandler {
     private static final String DRAGDROP_JS;
     private static final String ERRORS_JS;
     private static final int MAX_RECENT_COMMANDS = 10;
+    private static final long BLOCKING_WARNING_THRESHOLD_MS = 100;
+    private static final String ASYNC_COMMANDS_DOCS = "docs/async-commands";
 
     static {
         // Load the bridge JavaScript from resources
@@ -55,13 +58,19 @@ public class IpcHandler {
     }
 
     private final KremaWindow window;
+    private final boolean devMode;
     private final String[] recentRing = new String[MAX_RECENT_COMMANDS];
     private final AtomicInteger ringIndex = new AtomicInteger(0);
     private Function<IpcRequest, Object> commandHandler;
     private ErrorHandler errorHandler;
 
     public IpcHandler(KremaWindow window) {
+        this(window, false);
+    }
+
+    public IpcHandler(KremaWindow window, boolean devMode) {
         this.window = window;
+        this.devMode = devMode;
     }
 
     /**
@@ -178,7 +187,12 @@ public class IpcHandler {
                 return;
             }
 
-            Object result = commandHandler.apply(ipcRequest);
+            Object result;
+            if (devMode) {
+                result = applyCommandWithBlockingWarning(command, ipcRequest);
+            } else {
+                result = commandHandler.apply(ipcRequest);
+            }
 
             // If the command returned a CompletableFuture, handle it asynchronously.
             // The result is delivered via eval calling the webview library's internal
@@ -211,6 +225,20 @@ public class IpcHandler {
 
         } catch (Exception e) {
             returnError(seq, e.getMessage());
+        }
+    }
+
+    private Object applyCommandWithBlockingWarning(String command, IpcRequest ipcRequest) {
+        long startNanos = System.nanoTime();
+        try {
+            return commandHandler.apply(ipcRequest);
+        } finally {
+            long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+            if (elapsedMs > BLOCKING_WARNING_THRESHOLD_MS) {
+                System.err.println("[Krema] IPC command '" + command + "' blocked the main thread for "
+                    + elapsedMs + "ms (threshold " + BLOCKING_WARNING_THRESHOLD_MS
+                    + "ms). Move blocking work to async commands; see " + ASYNC_COMMANDS_DOCS + ".");
+            }
         }
     }
 

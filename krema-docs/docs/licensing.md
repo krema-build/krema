@@ -2,7 +2,7 @@ Here's how the main options stack up for your situation:
 
   Open Core (MIT/Apache core + proprietary features)
 
-  How it works: The base Crema runtime is open source, Pro/Enterprise/Industrial features are closed.
+  How it works: The base Krema runtime is open source, Pro/Enterprise/Industrial features are closed.
 
   Problem for you: This is the highest-risk option for a solo dev. A company can fork the open core, build their own premium features on top, and outpace you with a 50-person team. This is exactly the scenario
   that burned Elastic, Redis Labs, and others — and they had full companies behind them, not a single developer. You'd be giving away the foundation and hoping your premium layer stays ahead. That's a hard race
@@ -107,7 +107,7 @@ Here's how the main options stack up for your situation:
   The projects that did well (Sidekiq, Plausible, Cal.com, Sentry) either chose a protective license from the start or changed proactively before a crisis.
 
   For your situation — solo developer, starting a new project, no existing community expectations to violate — you're in the best possible position to choose a protective license from day one. Nobody can accuse
-   you of a bait-and-switch because there's no switch. BSL or FSL from the start means anyone who adopts Crema knows the terms upfront.
+   you of a bait-and-switch because there's no switch. BSL or FSL from the start means anyone who adopts Krema knows the terms upfront.
 
   The Sidekiq model (solo dev, tiered commercial) is the closest analogue to your business structure, but Perham chose open core rather than BSL because Sidekiq predates BSL's existence. If he were starting
   today, BSL/FSL would likely be on his radar.
@@ -169,18 +169,18 @@ Here's how the main options stack up for your situation:
 
 
 
-Crema is a framework. The developer's application code runs inside Crema's Java runtime, calls Crema APIs, and relies on Crema's WebView bridge. This is much more tightly coupled than, say, using Sentry (a
+Krema is a framework. The developer's application code runs inside Krema's Java runtime, calls Krema APIs, and relies on Krema's WebView bridge. This is much more tightly coupled than, say, using Sentry (a
   standalone tool) or PostgreSQL (a separate process your app talks to over a socket).
 
-  Under AGPL, a strong argument exists that any app built with Crema is a derivative work of Crema. The developer's Java code links against Crema's runtime. The frontend JS calls Crema's bridge APIs. The whole
+  Under AGPL, a strong argument exists that any app built with Krema is a derivative work of Krema. The developer's Java code links against Krema's runtime. The frontend JS calls Krema's bridge APIs. The whole
   application is a single process.
 
-  This means in practice: nearly every commercial Crema user would need a commercial license. That's the desired monetization effect — but it creates friction at every stage.
+  This means in practice: nearly every commercial Krema user would need a commercial license. That's the desired monetization effect — but it creates friction at every stage.
 
-  Scenario 1: Developer discovers Crema, wants to try it
+  Scenario 1: Developer discovers Krema, wants to try it
 
   They find the project, think the architecture is interesting, and want to prototype something. They read the license: AGPL. They check the alternatives: Electron is MIT, Tauri is MIT/Apache. With Electron or
-  Tauri they can start building immediately with zero legal considerations. With Crema they either accept that their prototype is now AGPL-encumbered, or they email you about commercial terms before writing a
+  Tauri they can start building immediately with zero legal considerations. With Krema they either accept that their prototype is now AGPL-encumbered, or they email you about commercial terms before writing a
   line of code.
 
   Many developers will just pick Tauri. Not because it's better technically, but because it has zero friction at the "let me try this on a Saturday afternoon" stage.
@@ -190,14 +190,14 @@ Crema is a framework. The developer's application code runs inside Crema's Java 
 
 The conversion concern is worth stress-testing though. Ask yourself: in 3 years, what would a competitor actually have?
 
-  They'd have a 3-year-old snapshot of Crema's runtime — no Platform services (those are proprietary/hosted), no ongoing maintenance, no Panama bindings for APIs that didn't exist 3 years ago, no support for
+  They'd have a 3-year-old snapshot of Krema's runtime — no Platform services (those are proprietary/hosted), no ongoing maintenance, no Panama bindings for APIs that didn't exist 3 years ago, no support for
   whatever macOS/Windows version shipped last year. They'd have to fork it, staff a team to maintain it, keep up with three operating systems' native API changes, and build their own platform layer from
   scratch. That's not free code — that's a full-time job.
 
   The projects where BSL conversion actually hurt would be slow-moving infrastructure: a database engine, a protocol implementation, something where the 3-year-old code is still perfectly functional. For a
   desktop framework targeting native OS APIs that change yearly, the treadmill works in your favor.
 
-  So the realistic risk isn't "AWS forks Crema 3.0 and ships Crema Enterprise." It's more like "a small company takes the converted code as a starting point for something adjacent." And at that point, you're 3
+  So the realistic risk isn't "AWS forks Krema 3.0 and ships Krema Enterprise." It's more like "a small company takes the converted code as a starting point for something adjacent." And at that point, you're 3
   years ahead with a fully integrated platform, a user base, and institutional knowledge of the codebase.
 
   The place where BSL/FSL doesn't protect you is if someone builds a clean-room competitor inspired by your ideas — but no license protects against that. Ideas aren't copyrightable.

@@ -60,12 +60,12 @@ public class EventEmitter {
                 "timestamp", event.timestamp()
             ));
 
-            StringBuilder js = new StringBuilder(64 + payloadJson.length());
-            js.append("window.__krema_emit && window.__krema_emit('")
-              .append(event.name())
-              .append("', '");
+            StringBuilder js = new StringBuilder(96 + payloadJson.length());
+            js.append("setTimeout(function(){ window.__krema_emit && window.__krema_emit('");
+            escapeForJs(event.name(), js);
+            js.append("', '");
             escapeForJs(payloadJson, js);
-            js.append("')");
+            js.append("'); },0)");
 
             engine.eval(js.toString());
         } catch (JsonProcessingException e) {

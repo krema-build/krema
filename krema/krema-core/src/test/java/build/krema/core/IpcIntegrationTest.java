@@ -19,11 +19,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 /**
  * Integration tests that exercise the full IPC pipeline:
@@ -96,6 +100,20 @@ class IpcIntegrationTest {
 
     private CapturedResult invokeCommand(String command) throws JsonProcessingException {
         return invokeCommand(command, null);
+    }
+
+    private static String requestArgsJson(String command) throws JsonProcessingException {
+        ObjectNode request = MAPPER.createObjectNode();
+        request.put("cmd", command);
+        return MAPPER.writeValueAsString(List.of(MAPPER.writeValueAsString(request)));
+    }
+
+    private static CapturingWebViewEngine initializeIpc(boolean devMode, Function<IpcHandler.IpcRequest, Object> handler) {
+        CapturingWebViewEngine testEngine = new CapturingWebViewEngine();
+        IpcHandler testHandler = new IpcHandler(new KremaWindow(testEngine), devMode);
+        testHandler.setCommandHandler(handler);
+        testHandler.initialize();
+        return testEngine;
     }
 
     // -- Pipeline wiring --------------------------------------------------
@@ -396,6 +414,101 @@ class IpcIntegrationTest {
         }
     }
 
+    // -- Blocking watchdog -----------------------------------------------
+
+    @Nested
+    @DisplayName("Blocking watchdog")
+    class BlockingWatchdog {
+
+        @Test
+        @DisplayName("warns in dev mode when a command returns slowly")
+        void warnsInDevModeForSlowReturn() throws Exception {
+            CapturingWebViewEngine devEngine = initializeIpc(true, request -> {
+                sleepPastBlockingThreshold();
+                return "ok";
+            });
+
+            String warning = captureStderr(() -> invokeRaw(devEngine, "watch:slow-return"));
+
+            assertAll(
+                () -> assertTrue(warning.contains("watch:slow-return")),
+                () -> assertTrue(warning.contains("threshold 100ms")),
+                () -> assertTrue(warning.contains("docs/async-commands")),
+                () -> assertTrue(devEngine.results.getLast().success())
+            );
+        }
+
+        @Test
+        @DisplayName("warns in dev mode when a command throws slowly")
+        void warnsInDevModeForSlowThrow() throws Exception {
+            CapturingWebViewEngine devEngine = initializeIpc(true, request -> {
+                sleepPastBlockingThreshold();
+                throw new RuntimeException("slow failure");
+            });
+
+            String warning = captureStderr(() -> invokeRaw(devEngine, "watch:slow-throw"));
+
+            assertAll(
+                () -> assertTrue(warning.contains("watch:slow-throw")),
+                () -> assertTrue(warning.contains("threshold 100ms")),
+                () -> assertTrue(warning.contains("docs/async-commands")),
+                () -> assertFalse(devEngine.results.getLast().success())
+            );
+        }
+
+        @Test
+        @DisplayName("does not warn outside dev mode")
+        void doesNotWarnOutsideDevMode() throws Exception {
+            CapturingWebViewEngine prodEngine = initializeIpc(false, request -> {
+                sleepPastBlockingThreshold();
+                return "ok";
+            });
+
+            String warning = captureStderr(() -> invokeRaw(prodEngine, "watch:prod-slow"));
+
+            assertEquals("", warning);
+            assertTrue(prodEngine.results.getLast().success());
+        }
+
+        @Test
+        @DisplayName("does not warn for fast dev commands")
+        void doesNotWarnForFastDevCommands() throws Exception {
+            CapturingWebViewEngine devEngine = initializeIpc(true, request -> "ok");
+
+            String warning = captureStderr(() -> invokeRaw(devEngine, "watch:fast"));
+
+            assertEquals("", warning);
+            assertTrue(devEngine.results.getLast().success());
+        }
+
+        private void invokeRaw(CapturingWebViewEngine targetEngine, String command) throws Exception {
+            WebViewEngine.BindCallback callback = targetEngine.bindings.get("__krema_invoke");
+            assertNotNull(callback);
+            callback.invoke("watchdog", requestArgsJson(command));
+        }
+
+        private String captureStderr(ThrowingRunnable action) throws Exception {
+            PrintStream original = System.err;
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            try (PrintStream replacement = new PrintStream(buffer, true, StandardCharsets.UTF_8)) {
+                System.setErr(replacement);
+                action.run();
+            } finally {
+                System.setErr(original);
+            }
+            return buffer.toString(StandardCharsets.UTF_8);
+        }
+
+        private void sleepPastBlockingThreshold() {
+            try {
+                Thread.sleep(125);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     // -- Argument handling ------------------------------------------------
 
     @Nested
@@ -538,6 +651,11 @@ class IpcIntegrationTest {
     // -- stubs ------------------------------------------------------------
 
     record CapturedResult(String seq, boolean success, String json) {}
+
+    @FunctionalInterface
+    interface ThrowingRunnable {
+        void run() throws Exception;
+    }
 
     static class CapturingWebViewEngine implements WebViewEngine {
         final Map<String, BindCallback> bindings = new LinkedHashMap<>();

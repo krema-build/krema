@@ -26,6 +26,9 @@ const sidebars = {
         'guides/native-image',
         'guides/code-signing',
         'guides/auto-updates',
+        'events',
+        'async-commands',
+        'threading',
       ],
     },
     {

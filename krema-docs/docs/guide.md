@@ -1,4 +1,4 @@
-# Crema User Guide
+# Krema User Guide
 
 Build lightweight, cross-platform desktop applications using web technologies and Java.
 
@@ -22,14 +22,14 @@ Build lightweight, cross-platform desktop applications using web technologies an
 
 ## Introduction
 
-Crema is a desktop application framework that combines:
+Krema is a desktop application framework that combines:
 - **System WebViews** for lightweight UI rendering (WebKit on macOS, WebView2 on Windows, WebKitGTK on Linux)
 - **Java backend** for business logic and native API access
 - **Project Panama FFM API** for efficient native interop
 
-### Why Crema?
+### Why Krema?
 
-| Feature | Crema | Electron | Tauri |
+| Feature | Krema | Electron | Tauri |
 |---------|-------|----------|-------|
 | Bundle size | ~50-80MB | ~150-200MB | ~5-15MB |
 | Memory usage | ~80-100MB | ~150-300MB | ~50-80MB |
@@ -50,7 +50,7 @@ Crema is a desktop application framework that combines:
 
 #### Linux Setup
 
-On Linux, install the required system libraries before building or running Crema apps:
+On Linux, install the required system libraries before building or running Krema apps:
 
 **Ubuntu/Debian:**
 ```bash
@@ -109,7 +109,7 @@ krema dev
 
 ```
 my-app/
-├── krema.toml           # Crema configuration
+├── krema.toml           # Krema configuration
 ├── pom.xml              # Maven build file
 ├── package.json         # Frontend dependencies
 ├── src/                 # Frontend source (HTML/CSS/JS)
@@ -134,7 +134,7 @@ my-app/
 name = "my-app"
 version = "1.0.0"
 identifier = "com.example.myapp"
-description = "My Crema Application"
+description = "My Krema Application"
 
 [window]
 title = "My App"
@@ -181,7 +181,7 @@ show_progress = true
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `title` | string | "Crema App" | Window title |
+| `title` | string | "Krema App" | Window title |
 | `width` | int | 1024 | Initial width |
 | `height` | int | 768 | Initial height |
 | `min_width` | int | 0 | Minimum width |
@@ -198,7 +198,7 @@ show_progress = true
 
 ### JavaScript Bridge
 
-Crema injects a global `window.krema` object:
+Krema injects a global `window.krema` object:
 
 ```javascript
 // Invoke a backend command
@@ -317,11 +317,11 @@ public record UserInfo(String id, String name, String email) {}
 ### Registering Commands
 
 ```java
-import build.krema.Crema;
+import build.krema.core.Krema;
 
 public class Main {
     public static void main(String[] args) {
-        Crema.app()
+        Krema.app()
             .title("My App")
             .size(1200, 800)
             .devUrl("http://localhost:5173")
@@ -373,14 +373,14 @@ public CompletableFuture<SearchResults> search(String query) {
 ### Emitting Events from Backend
 
 ```java
-import build.krema.Crema;
+import build.krema.core.Krema;
 import build.krema.event.EventEmitter;
 
 public class Main {
     private static EventEmitter events;
 
     public static void main(String[] args) {
-        Crema.app()
+        Krema.app()
             .title("My App")
             .events(emitter -> events = emitter)
             .commands(new Commands())
@@ -570,7 +570,7 @@ public Map<String, String> getAppPaths() {
 ### Basic Usage
 
 ```java
-Crema.app()
+Krema.app()
     .title("My App")
     .splash() // Enable with defaults
     .run();
@@ -581,7 +581,7 @@ Crema.app()
 ```java
 import build.krema.splash.SplashScreenOptions;
 
-Crema.app()
+Krema.app()
     .title("My App")
     .splash(SplashScreenOptions.builder()
         .appName("My App")
@@ -598,7 +598,7 @@ Crema.app()
 ### Custom Progress Updates
 
 ```java
-Crema.app()
+Krema.app()
     .splash(options, splash -> {
         splash.setProgress(50);
         splash.setStatus("Loading plugins...");
@@ -644,7 +644,7 @@ krema dev
 This:
 1. Starts your frontend dev server (npm run dev)
 2. Waits for it to be ready
-3. Opens a Crema window pointing to the dev server
+3. Opens a Krema window pointing to the dev server
 4. Enables debug tools (right-click to inspect)
 
 ### Production Build
@@ -810,7 +810,7 @@ curl http://localhost:5173
 Enable debug mode to access developer tools:
 
 ```java
-Crema.app()
+Krema.app()
     .debug(true) // or .debug()
     .run();
 ```
