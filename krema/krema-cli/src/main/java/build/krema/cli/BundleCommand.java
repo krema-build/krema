@@ -55,6 +55,7 @@ public class BundleCommand implements Callable<Integer> {
             // Run build first if not skipped
             if (!skipBuild) {
                 BuildCommand buildCommand = new BuildCommand();
+                buildCommand.setConfigPath(configPath);
                 buildCommand.setEnvProfile(envProfile);
                 int buildResult = buildCommand.call();
                 if (buildResult != 0) {

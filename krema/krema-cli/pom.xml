@@ -7,10 +7,11 @@
     <parent>
         <groupId>build.krema</groupId>
         <artifactId>krema-parent</artifactId>
-		<version>0.3.3</version>
+	<version>0.3.3</version>
     </parent>
 
     <artifactId>krema-cli</artifactId>
+    <version>0.3.4</version>
     <packaging>jar</packaging>
 
     <name>Krema CLI</name>
@@ -24,12 +25,16 @@
         </license>
     </licenses>
 
+    <properties>
+        <core.version>0.3.2</core.version>
+    </properties>
+
     <dependencies>
         <!-- Krema Core -->
         <dependency>
             <groupId>build.krema</groupId>
             <artifactId>krema-core</artifactId>
-            <version>${project.version}</version>
+            <version>${core.version}</version>
         </dependency>
 
         <!-- CLI Framework -->

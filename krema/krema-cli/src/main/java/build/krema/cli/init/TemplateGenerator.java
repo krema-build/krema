@@ -229,7 +229,7 @@ public class TemplateGenerator {
                 config.getArtifactId(),
                 config.getAppName(),
                 config.getDescription(),
-                CliVersion.get(),
+                CliVersion.getCoreVersion(),
                 pluginDependencies.toString(),
                 config.getJavaPackage()
         );

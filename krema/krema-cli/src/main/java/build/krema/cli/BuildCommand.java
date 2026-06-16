@@ -479,6 +479,10 @@ public class BuildCommand implements Callable<Integer> {
         }
     }
 
+    void setConfigPath(String path) {
+        this.configPath = path;
+    }
+
     void setEnvProfile(String profile) {
         this.envProfile = profile;
     }

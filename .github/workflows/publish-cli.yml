@@ -1,0 +1,199 @@
+name: Publish CLI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.3.2)'
+        required: true
+        type: string
+
+env:
+  JAVA_VERSION: '25'
+
+jobs:
+  build-jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Build fat JAR
+        run: mvn clean package -q -DskipTests
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: krema-cli-jar
+          path: krema/krema-cli/target/krema-cli.jar
+
+  build-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+            platform: darwin-arm64
+            runner-arch: ARM64
+          - os: ubuntu-latest
+            arch: x64
+            platform: linux-x64
+            runner-arch: X64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            platform: linux-arm64
+            runner-arch: ARM64
+          - os: windows-latest
+            arch: x64
+            platform: win32-x64
+            runner-arch: X64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'graalvm'
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev build-essential pkg-config
+
+      - name: Build fat JAR
+        run: mvn clean package -q -DskipTests
+
+      - name: Build native image (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          native-image \
+            --enable-native-access=ALL-UNNAMED \
+            -H:+UnlockExperimentalVMOptions \
+            -H:-CheckToolchain \
+            -Djava.awt.headless=true \
+            -jar krema/krema-cli/target/krema-cli.jar \
+            -o krema-${{ matrix.platform }}
+
+      - name: Build native image (Windows)
+        if: runner.os == 'Windows'
+        run: >
+          & "$env:JAVA_HOME\bin\native-image.cmd"
+          --enable-native-access=ALL-UNNAMED
+          -H:+UnlockExperimentalVMOptions
+          -H:-CheckToolchain
+          -Djava.awt.headless=true
+          -jar krema/krema-cli/target/krema-cli.jar
+          -o krema-${{ matrix.platform }}
+
+      - name: Bundle VC runtime DLLs (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $crtDir = Get-ChildItem "$vsPath\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory | Select-Object -Last 1
+          Copy-Item "$($crtDir.FullName)\vcruntime140.dll" .
+          Copy-Item "$($crtDir.FullName)\vcruntime140_1.dll" .
+
+      - name: Upload native binary (Unix)
+        if: runner.os != 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: krema-native-${{ matrix.platform }}
+          path: krema-${{ matrix.platform }}
+
+      - name: Upload native binary (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: krema-native-${{ matrix.platform }}
+          path: |
+            krema-${{ matrix.platform }}.exe
+            vcruntime140.dll
+            vcruntime140_1.dll
+
+  publish-npm:
+    needs: [build-jar, build-native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare platform packages
+        run: |
+          VERSION="${{ inputs.version }}"
+          UNIX_PLATFORMS=("darwin-arm64" "linux-x64" "linux-arm64")
+          for platform in "${UNIX_PLATFORMS[@]}"; do
+            PKG_DIR="krema-npm/packages/@krema-build/cli-${platform}"
+            cp "artifacts/krema-native-${platform}/krema-${platform}" "${PKG_DIR}/bin/krema"
+            chmod +x "${PKG_DIR}/bin/krema"
+            cd "$PKG_DIR"
+            npm version "$VERSION" --no-git-tag-version --allow-same-version
+            cd "$GITHUB_WORKSPACE"
+          done
+
+          # Windows (include VC runtime DLLs alongside the binary)
+          for win_platform in "win32-x64"; do
+            PKG_DIR="krema-npm/packages/@krema-build/cli-${win_platform}"
+            cp "artifacts/krema-native-${win_platform}/krema-${win_platform}.exe" "${PKG_DIR}/bin/krema.exe"
+            cp "artifacts/krema-native-${win_platform}/vcruntime140.dll" "${PKG_DIR}/bin/"
+            cp "artifacts/krema-native-${win_platform}/vcruntime140_1.dll" "${PKG_DIR}/bin/"
+            cd "$PKG_DIR"
+            npm version "$VERSION" --no-git-tag-version --allow-same-version
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Update main package version, optional deps, and constants
+        run: |
+          cd krema-npm/packages/krema
+          VERSION="${{ inputs.version }}"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          node -e "
+            const fs = require('fs');
+            const v = '${VERSION}';
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            for (const key of Object.keys(pkg.optionalDependencies || {})) {
+              pkg.optionalDependencies[key] = v;
+            }
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            const constFile = 'lib/constants.js';
+            let src = fs.readFileSync(constFile, 'utf8');
+            src = src.replace(/const VERSION = '.*?'/, \"const VERSION = '\" + v + \"'\");
+            fs.writeFileSync(constFile, src);
+          "
+
+      - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          PLATFORMS=("darwin-arm64" "linux-x64" "linux-arm64" "win32-x64")
+          for platform in "${PLATFORMS[@]}"; do
+            cd "krema-npm/packages/@krema-build/cli-${platform}"
+            npm publish --access public || true
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Publish main package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd krema-npm/packages/krema
+          npm publish --access public
