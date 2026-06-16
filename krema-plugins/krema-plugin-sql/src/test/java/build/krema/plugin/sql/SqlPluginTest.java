@@ -1,10 +1,13 @@
 package build.krema.plugin.sql;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -273,6 +276,16 @@ class SqlPluginTest {
         }
 
         @Test
+        @DisplayName("duplicate open while opening is rejected as opening")
+        void duplicateOpenWhileOpeningIsRejectedAsOpening() throws Exception {
+            putOpeningHandle(plugin, "testdb");
+
+            IllegalStateException error = assertThrows(IllegalStateException.class, () ->
+                await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:"))));
+            assertEquals("Database 'testdb' is opening; retry after open completes", error.getMessage());
+        }
+
+        @Test
         @DisplayName("reopen while close is queued is rejected as closing")
         void reopenWhileClosingIsRejected() throws Exception {
             await(commands.open(new SqlPlugin.SqlOpenRequest("testdb", ":memory:")));
@@ -474,5 +487,19 @@ class SqlPluginTest {
         } catch (TimeoutException e) {
             throw new AssertionError("Timed out waiting for SQL command future", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void putOpeningHandle(SqlPlugin plugin, String name) throws Exception {
+        Class<?> handleClass = Class.forName("build.krema.plugin.sql.SqlPlugin$ConnectionHandle");
+        Constructor<?> constructor = handleClass.getDeclaredConstructor(String.class);
+        constructor.setAccessible(true);
+        Object handle = constructor.newInstance(name);
+
+        Field handlesField = SqlPlugin.class.getDeclaredField("handles");
+        handlesField.setAccessible(true);
+        ConcurrentHashMap<String, Object> handles =
+            (ConcurrentHashMap<String, Object>) handlesField.get(plugin);
+        handles.put(name, handle);
     }
 }

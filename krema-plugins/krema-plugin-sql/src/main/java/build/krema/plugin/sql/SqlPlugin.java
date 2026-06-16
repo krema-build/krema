@@ -309,6 +309,9 @@ public class SqlPlugin implements KremaPlugin {
         }
 
         synchronized RuntimeException openRejectedException() {
+            if (state == ConnectionState.OPENING) {
+                return new IllegalStateException("Database '" + name + "' is opening; retry after open completes");
+            }
             if (state == ConnectionState.CLOSING) {
                 return new IllegalStateException("Database '" + name + "' is closing; retry after close completes");
             }

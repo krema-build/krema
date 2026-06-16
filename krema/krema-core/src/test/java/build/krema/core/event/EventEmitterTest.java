@@ -12,6 +12,8 @@ import build.krema.core.webview.WebViewEngine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -91,6 +93,38 @@ class EventEmitterTest {
     }
 
     @Test
+    @DisplayName("once fires once when concurrent emits share the same listener snapshot")
+    void onceFiresOnceForConcurrentEmits() throws Exception {
+        CountDownLatch bothEmittersHaveSnapshot = new CountDownLatch(2);
+        CountDownLatch releaseEmitters = new CountDownLatch(1);
+        AtomicInteger count = new AtomicInteger();
+        emitter.on("test", e -> {
+            bothEmittersHaveSnapshot.countDown();
+            try {
+                assertTrue(releaseEmitters.await(1, TimeUnit.SECONDS));
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                fail("interrupted while coordinating concurrent emit");
+            }
+        });
+        emitter.once("test", e -> count.incrementAndGet());
+
+        Thread first = new Thread(() -> emitter.emit("test"), "krema-event-once-test-1");
+        Thread second = new Thread(() -> emitter.emit("test"), "krema-event-once-test-2");
+        first.start();
+        second.start();
+
+        assertTrue(bothEmittersHaveSnapshot.await(1, TimeUnit.SECONDS));
+        releaseEmitters.countDown();
+        first.join(1000);
+        second.join(1000);
+
+        assertFalse(first.isAlive());
+        assertFalse(second.isAlive());
+        assertEquals(1, count.get());
+    }
+
+    @Test
     @DisplayName("onAll receives events of any name")
     void onAllReceivesAll() {
         List<String> received = new ArrayList<>();
@@ -143,6 +177,29 @@ class EventEmitterTest {
 
         JsonNode eventEnvelope = MAPPER.readTree(unescapeJsSingleQuotedArgument(js, 1));
         assertEquals("value with 'quote' and \\slash", eventEnvelope.get("payload").asText());
+        assertTrue(eventEnvelope.has("timestamp"));
+    }
+
+    @Test
+    @DisplayName("emit escapes JavaScript line terminators without changing event data")
+    void emitEscapesLineTerminatorsWithoutChangingEventData() throws Exception {
+        String eventName = "line\nevent\rname";
+        String payload = "line\u2028separator and paragraph\u2029separator";
+
+        emitter.emit(eventName, payload);
+
+        String js = engine.evalCalls.get(0);
+        assertAll(
+            () -> assertTrue(js.contains("line\\nevent\\rname")),
+            () -> assertTrue(js.contains("\\u2028")),
+            () -> assertTrue(js.contains("\\u2029")),
+            () -> assertFalse(js.contains(eventName)),
+            () -> assertFalse(js.contains(payload))
+        );
+
+        assertEquals(eventName, unescapeJsSingleQuotedArgument(js, 0));
+        JsonNode eventEnvelope = MAPPER.readTree(unescapeJsSingleQuotedArgument(js, 1));
+        assertEquals(payload, eventEnvelope.get("payload").asText());
         assertTrue(eventEnvelope.has("timestamp"));
     }
 
@@ -220,7 +277,16 @@ class EventEmitterTest {
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
             if (escaped) {
-                out.append(c);
+                if (c == 'n') {
+                    out.append('\n');
+                } else if (c == 'r') {
+                    out.append('\r');
+                } else if (c == 'u' && i + 4 < value.length()) {
+                    out.append((char) Integer.parseInt(value.substring(i + 1, i + 5), 16));
+                    i += 4;
+                } else {
+                    out.append(c);
+                }
                 escaped = false;
             } else if (c == '\\') {
                 escaped = true;

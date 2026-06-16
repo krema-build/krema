@@ -26,6 +26,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -374,6 +376,27 @@ class IpcIntegrationTest {
         }
 
         @Test
+        @DisplayName("async exception message with JSON-sensitive characters propagates through eval reply")
+        void asyncExceptionMessageWithJsonSensitiveCharactersPropagates() throws Exception {
+            String message = "bad \"quote\" and \\slash";
+            CapturingWebViewEngine asyncEngine = initializeIpc(false, request -> {
+                CompletableFuture<Object> future = new CompletableFuture<>();
+                future.completeExceptionally(new RuntimeException(message));
+                return future;
+            });
+
+            invokeRaw(asyncEngine, "async:fail-json-message");
+
+            EvalReply reply = parseEvalReply(awaitEval(asyncEngine));
+            JsonNode error = MAPPER.readTree(reply.json());
+            assertAll(
+                () -> assertEquals("0", reply.seq()),
+                () -> assertEquals(1, reply.status()),
+                () -> assertEquals(message, error.get("message").asText())
+            );
+        }
+
+        @Test
         @DisplayName("malformed JSON returns error, not crash")
         void malformedJsonReturnsError() {
             WebViewEngine.BindCallback callback = engine.bindings.get("__krema_invoke");
@@ -686,6 +709,8 @@ class IpcIntegrationTest {
         @Override public void close() {}
     }
 
+    record EvalReply(String seq, int status, String json) {}
+
     static class StubPluginContext implements PluginContext {
         @Override public WindowManager getWindowManager() { return null; }
         @Override public EventEmitter getEventEmitter() { return null; }
@@ -697,5 +722,43 @@ class IpcIntegrationTest {
         @Override public boolean hasPermission(String permission) { return true; }
         @Override public String getAppName() { return "test-app"; }
         @Override public String getAppVersion() { return "1.0.0"; }
+    }
+
+    private static void invokeRaw(CapturingWebViewEngine targetEngine, String command) throws Exception {
+        WebViewEngine.BindCallback callback = targetEngine.bindings.get("__krema_invoke");
+        assertNotNull(callback);
+        callback.invoke("0", requestArgsJson(command));
+    }
+
+    private static String awaitEval(CapturingWebViewEngine targetEngine) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
+        while (targetEngine.evalCalls.isEmpty() && System.nanoTime() < deadline) {
+            Thread.sleep(10);
+        }
+        assertFalse(targetEngine.evalCalls.isEmpty(), "Expected async reply via eval");
+        return targetEngine.evalCalls.getLast();
+    }
+
+    private static EvalReply parseEvalReply(String js) throws Exception {
+        String marker = "window.__webview__.onReply('";
+        int seqStart = js.indexOf(marker);
+        assertTrue(seqStart >= 0, "missing onReply call in " + js);
+        seqStart += marker.length();
+        int seqEnd = js.indexOf('\'', seqStart);
+        assertTrue(seqEnd >= 0, "missing seq end in " + js);
+
+        int statusStart = js.indexOf(", ", seqEnd) + 2;
+        assertTrue(statusStart > 1, "missing status in " + js);
+        int statusEnd = js.indexOf(", ", statusStart);
+        assertTrue(statusEnd >= 0, "missing json argument in " + js);
+
+        int jsonStart = statusEnd + 2;
+        int jsonEnd = js.indexOf(");},0)", jsonStart);
+        assertTrue(jsonEnd >= 0, "missing onReply terminator in " + js);
+
+        String seq = js.substring(seqStart, seqEnd);
+        int status = Integer.parseInt(js.substring(statusStart, statusEnd));
+        String json = MAPPER.readValue(js.substring(jsonStart, jsonEnd), String.class);
+        return new EvalReply(seq, status, json);
     }
 }

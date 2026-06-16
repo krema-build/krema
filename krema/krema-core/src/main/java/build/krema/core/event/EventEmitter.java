@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -74,7 +75,7 @@ public class EventEmitter {
     }
 
     /**
-     * Single-pass escape of backslash and single-quote for embedding in a JS single-quoted string.
+     * Single-pass escape for embedding in a JS single-quoted string.
      */
     private static void escapeForJs(String input, StringBuilder out) {
         for (int i = 0, len = input.length(); i < len; i++) {
@@ -83,6 +84,14 @@ public class EventEmitter {
                 out.append("\\\\");
             } else if (c == '\'') {
                 out.append("\\'");
+            } else if (c == '\n') {
+                out.append("\\n");
+            } else if (c == '\r') {
+                out.append("\\r");
+            } else if (c == '\u2028') {
+                out.append("\\u2028");
+            } else if (c == '\u2029') {
+                out.append("\\u2029");
             } else {
                 out.append(c);
             }
@@ -145,8 +154,13 @@ public class EventEmitter {
      */
     public void once(String eventName, Consumer<KremaEvent> listener) {
         Consumer<KremaEvent> wrapper = new Consumer<>() {
+            private final AtomicBoolean fired = new AtomicBoolean();
+
             @Override
             public void accept(KremaEvent event) {
+                if (!fired.compareAndSet(false, true)) {
+                    return;
+                }
                 off(eventName, this);
                 listener.accept(event);
             }
